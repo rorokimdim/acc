@@ -4,18 +4,15 @@
             [clojure.repl :refer :all]
             [table.core :refer [table table-str]]
             [com.hypirion.clj-xchart :as c]
+            [acc.config :as config]
             [acc.repl :as repl]
             [acc.io :as io]
             [acc.dao :as dao]))
 
-(def DEFAULT-REPL-PORT 9888)
-(def CONFIG-DIRECTORY-PATH (str (System/getenv "HOME") "/.acc") )
-(def COMPLETIONS-FILE-PATH (str CONFIG-DIRECTORY-PATH "/completions"))
-
 (def cli-options
   [["-h" "--help"]
    ["-p" "--port PORT" "port number"
-    :default DEFAULT-REPL-PORT
+    :default config/DEFAULT-REPL-PORT
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]])
 
@@ -118,9 +115,9 @@
   "Initializes things necessary/nice-to-haves for acc."
   (println "Initializing database as necessary...")
   (dao/init-db)
-  (.mkdirs (java.io.File. CONFIG-DIRECTORY-PATH))
+  (.mkdirs (java.io.File. config/CONFIG-DIRECTORY-PATH))
   (println "Generating completions file for repl...")
-  (generate-completions-file COMPLETIONS-FILE-PATH)
+  (generate-completions-file config/COMPLETIONS-FILE-PATH)
   (System/exit 0))
 
 (defn -main
