@@ -9,6 +9,16 @@
           :indent-arrays? true)))
 
 (defn print-formatted
+  "Prints formatted form of any data.
+  The following formats are supported:
+
+  * table tabular format (default)
+  * org table in org format
+  * unicode table with unicode characters
+  * unicode-3d table that looks 3Dish
+  * csv Comma delimited csv string
+  * html HTML table
+  * json Prettiefied JSON string"
   ([data] (print-formatted data "table"))
   ([data oformat]
    (case oformat
@@ -16,11 +26,14 @@
      "html" (println (doric/table {:format doric/html} data))
      "json" (println (c/generate-string data {:pretty JSON-PRETTY-PRINTER}))
      "org" (table data :style :org)
+     "table" (table data)
      "unicode" (table data :style :unicode)
      "unicode-3d" (table data :style :unicode-3d)
      (table data))))
 
-(defn prompt-for-string [message]
+(defn prompt-for-string
+  "Prompts for a string."
+  [message]
   (print message)
   (flush)
   (let [s (clojure.string/trim (read-line))]
@@ -30,7 +43,9 @@
         (println "Invalid input. Cannot be empty.")
         (prompt-for-string message)))))
 
-(defn prompt-for-float [message]
+(defn prompt-for-float
+  "Prompts for a float."
+  [message]
   (print message)
   (flush)
   (let [s (clojure.string/trim (read-line))]
@@ -39,7 +54,9 @@
            (do (println "Invalid input. Must be a valid real number.")
                (prompt-for-float message))))))
 
-(defn prompt-for-date [message date-format default]
+(defn prompt-for-date
+  "Prompts for a date string."
+  [message date-format default]
   (print message)
   (flush)
   (let [s (clojure.string/trim (read-line))]
@@ -53,6 +70,7 @@
               (prompt-for-date message date-format default)))))))
 
 (defn prompt-from-choices [message choices]
+  "Prompts for a string which should be one of the given CHOICES."
   (let [choice (clojure.string/lower-case
                 (prompt-for-string message))]
     (if (some #(= choice %) choices)

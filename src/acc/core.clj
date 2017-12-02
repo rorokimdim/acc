@@ -111,8 +111,9 @@
     (with-open [f (java.io.BufferedWriter. (java.io.FileWriter. file-path))]
       (.write f (apply str (interpose \newline completions))))))
 
-(defn init []
+(defn init
   "Initializes things necessary/nice-to-haves for acc."
+  []
   (println "Initializing database as necessary...")
   (dao/init-db)
   (.mkdirs (java.io.File. config/CONFIG-DIRECTORY-PATH))

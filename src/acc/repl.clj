@@ -16,11 +16,14 @@
             (print "\033[m")
             (flush))})
 
-(defn start-server [port]
+(defn start-server
+  "Starts a repl server."
+  [port]
   (println (format "Starting repl in port %d..." port))
   (nrepl-server/start-server :port port :handler cider-nrepl-handler))
 
 (defn run-repl
+  "Runs a simple repl."
   ([port] (run-repl port nil))
   ([port {:keys [prompt err out value]
           :or {prompt #(print (str % "=> "))
