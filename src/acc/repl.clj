@@ -22,14 +22,19 @@
   (println (format "Starting repl in port %d..." port))
   (nrepl-server/start-server :port port :handler cider-nrepl-handler))
 
+(defn stop-server
+  "Stops a repl server"
+  [server]
+  (nrepl-server/stop-server server))
+
 (defn run-repl
   "Runs a simple repl."
-  ([port] (run-repl port nil))
-  ([port {:keys [prompt err out value]
-          :or {prompt #(print (str % "=> "))
-               err println
-               out print
-               value println}}]
+  ([port server] (run-repl port server nil))
+  ([port server {:keys [prompt err out value]
+                 :or {prompt #(print (str % "=> "))
+                      err println
+                      out print
+                      value println}}]
    (let [transport (nrepl/connect :host "localhost" :port port)
          client (nrepl/client-session (nrepl/client transport Long/MAX_VALUE))
          ns (atom "user")
@@ -50,4 +55,5 @@
            (do (evaluator (pr-str iobj))
                (recur))
            (do (println "Goodbye, see you later!")
+               (stop-server server)
                (System/exit 0))))))))

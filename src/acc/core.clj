@@ -130,7 +130,9 @@
       (exit (if ok? 0 1) exit-message)
       (case action
         "init" (init)
-        "repl" (do (repl/start-server (:port options))
-                   (repl/run-repl (:port options)))
+        "repl" (let [server (repl/start-server (:port options))]
+                 (.addShutdownHook (Runtime/getRuntime)
+                                   (Thread. (fn [] (repl/stop-server server))))
+                 (repl/run-repl (:port options) server))
         "list" (execute-list-command arguments)
         "add" (execute-add-command arguments)))))
