@@ -17,6 +17,6 @@
   :main ^:skip-aot acc.core
   :target-path "target/%s"
   :bin {:name "acc"
-        :custom-preamble "#!/bin/sh\nmkdir -p \"$HOME/.acc\"\ntouch \"$HOME/.acc/completions\"\nbreakchars=\"(){}[],^%$#@\\\"\\\";:''|\"\nif ! [ -x \"$(command -v rlwrap)\" ]; then\n exec java {{{jvm-opts}}} -jar $0 \"$@\"\nelse\nexec rlwrap -r -c -b \"$breakchars\" -f \"$HOME/.acc/completions\" -H \"$HOME/.acc/history\" java {{{jvm-opts}}} -jar $0 \"$@\"\nfi\n"
+        :custom-preamble "#!/bin/sh\nmkdir -p \"$HOME/.acc\"\ntouch \"$HOME/.acc/completions\"\nbreakchars=\"(){}[],^%$#@\\\"\\\";:''|\"\nif ! [ -x \"$(command -v rlwrap)\" ]; then\n exec java {{{jvm-opts}}} -jar $0 \"$@\"\nelse\nexec rlwrap -a,, -pBlue -r -c -b \"$breakchars\" -f \"$HOME/.acc/completions\" -H \"$HOME/.acc/history\" java {{{jvm-opts}}} -jar $0 \"$@\"\nfi\n"
         :jvm-opts ["-server" "-Dfile.encoding=utf-8" "-Dapple.awt.UIElement=true" "$JVM_OPTS" ]}
   :profiles {:uberjar {:aot :all}})
