@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS account (
 -- :doc Drops account table
 DROP TABLE IF EXISTS account
 
+-- :name delete :! :*
+-- :doc Deletes investment records
+DELETE FROM account WHERE name IN (:v*:names)
+
 -- :name add :insert :raw
 -- :doc Adds a new account record
 INSERT INTO account (name) VALUES (:name)

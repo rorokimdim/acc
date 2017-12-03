@@ -33,15 +33,17 @@
 
 (defn prompt-for-string
   "Prompts for a string."
-  [message]
-  (print message)
-  (flush)
-  (let [s (clojure.string/trim (read-line))]
-    (if (not (clojure.string/blank? s))
-      s
-      (do
-        (println "Invalid input. Cannot be empty.")
-        (prompt-for-string message)))))
+  ([message] (prompt-for-string message false))
+  ([message blank-ok?]
+   (print message)
+   (flush)
+   (let [s (clojure.string/trim (read-line))]
+     (if (not (clojure.string/blank? s))
+       s
+       (if blank-ok? ""
+           (do
+             (println "Invalid input. Cannot be empty.")
+             (prompt-for-string message)))))))
 
 (defn prompt-for-float
   "Prompts for a float."
@@ -79,3 +81,11 @@
         (println "Input must be one of the following:")
         (print-formatted choices)
         (prompt-from-choices message choices)))))
+
+(defn confirm
+  "Confirms action with given message.
+  Returns true if user inputs 'yes', false otherwise."
+  [message]
+  (flush)
+  (let [input (prompt-from-choices message ["yes" "no"])]
+    (= input "yes")))

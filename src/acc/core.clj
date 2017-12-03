@@ -29,6 +29,7 @@
         "  repl     Starts a repl"
         "  list     Lists all stored accounts or investments"
         "  add      Adds an account or investment record"
+        "  delete   Deletes account or investment records"
         ""]
        (clojure.string/join \newline)))
 
@@ -44,7 +45,7 @@
       errors
       {:exit-message (error-msg errors)}
       (and (< 0 (count arguments))
-           (#{"init" "list" "add" "repl"} (first arguments)))
+           (#{"init" "list" "add" "delete" "repl"} (first arguments)))
       {:action (first arguments) :options options :arguments (rest arguments)}
       :else {:exit-message (usage summary)})))
 
@@ -63,8 +64,12 @@
         today (.format
                (java.text.SimpleDateFormat. "yyyy-MM-dd")
                (new java.util.Date))
-        date (io/prompt-for-date (format "Date (%s): " today) "yyyy-MM-dd" today)]
-    (dao/add-investment :account-name account-name :amount amount :date date)))
+        date (io/prompt-for-date (format "Date (%s): " today) "yyyy-MM-dd" today)
+        tag (io/prompt-for-string "Tag: " true)]
+    (dao/add-investment :account-name account-name
+                        :amount amount
+                        :date date
+                        :tag tag)))
 
 (defn handle-list-accounts
   ([] (handle-list-accounts "table"))
@@ -94,6 +99,32 @@
       (println "Syntax: list account|a|investment|i"
                "[csv|html|json|org|table|unicode]")))
   (System/exit 0))
+
+(defn handle-delete-accounts [names]
+  (if (seq names)
+    (do
+      (println "Deleting accounts with names" names)
+      (when (io/confirm "Are you sure? (yes/no): ")
+        (apply dao/delete-accounts names)))
+    (println "Syntax: delete account|a name...")))
+
+(defn handle-delete-investments [ids]
+  (if (seq ids)
+    (do
+      (println "Deleting investment with ids" ids)
+      (when (io/confirm "Are you sure? (yes/no): ")
+        (apply dao/delete-investments ids)))
+    (println "Syntax: delete investment|i id...")))
+
+(defn execute-delete-command [arguments]
+  (let [dtype (first arguments)
+        params (rest arguments)]
+    (case dtype
+      "account" (handle-delete-accounts params)
+      "a" (handle-delete-accounts params)
+      "investment" (handle-delete-investments params)
+      "i" (handle-delete-investments params)
+      (println "Syntax: delete account|a|investment|i names|ids"))))
 
 (defn get-completions-for-ns
   ([ns] (get-completions-for-ns ns ""))
@@ -135,4 +166,5 @@
                                    (Thread. (fn [] (repl/stop-server server))))
                  (repl/run-repl (:port options) server))
         "list" (execute-list-command arguments)
-        "add" (execute-add-command arguments)))))
+        "add" (execute-add-command arguments)
+        "delete" (execute-delete-command arguments)))))
