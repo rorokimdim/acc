@@ -13,7 +13,7 @@
                  [table "0.5.0"]
                  [doric "0.9.0"]
                  [com.hypirion/clj-xchart "0.2.0"]
-                 ]
+                 [clj-time "0.14.2"]]
   :main ^:skip-aot acc.core
   :target-path "target/%s"
   :bin {:name "acc"

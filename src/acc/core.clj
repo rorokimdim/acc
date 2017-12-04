@@ -7,7 +7,8 @@
             [acc.config :as config]
             [acc.repl :as repl]
             [acc.io :as io]
-            [acc.dao :as dao]))
+            [acc.dao :as dao]
+            [acc.analysis :as analysis]))
 
 (def cli-options
   [["-h" "--help"]
@@ -29,6 +30,7 @@
         "  repl     Starts a repl"
         "  list     Lists all stored accounts or investments"
         "  add      Adds an account or investment record"
+        "  analyze  Analyzes a particular account"
         "  delete   Deletes account or investment records"
         ""]
        (clojure.string/join \newline)))
@@ -45,7 +47,7 @@
       errors
       {:exit-message (error-msg errors)}
       (and (< 0 (count arguments))
-           (#{"init" "list" "add" "delete" "repl"} (first arguments)))
+           (#{"init" "list" "add" "analyze" "delete" "repl"} (first arguments)))
       {:action (first arguments) :options options :arguments (rest arguments)}
       :else {:exit-message (usage summary)})))
 
@@ -85,8 +87,7 @@
     "a" (handle-add-account)
     "investment" (handle-add-investment)
     "i" (handle-add-investment)
-    (println "Syntax: add account|a|investment|i"))
-  (System/exit 0))
+    (println "Syntax: add account|a|investment|i")))
 
 (defn execute-list-command [arguments]
   (let [dtype (first arguments)
@@ -97,8 +98,8 @@
       "investment" (handle-list-investments oformat)
       "i" (handle-list-investments oformat)
       (println "Syntax: list account|a|investment|i"
-               "[csv|html|json|org|table|unicode]")))
-  (System/exit 0))
+               "[csv|html|json|org|table|unicode]"))
+    (System/exit 0)))
 
 (defn handle-delete-accounts [names]
   (if (seq names)
@@ -124,7 +125,17 @@
       "a" (handle-delete-accounts params)
       "investment" (handle-delete-investments params)
       "i" (handle-delete-investments params)
-      (println "Syntax: delete account|a|investment|i names|ids"))))
+      (println "Syntax: delete account|a|investment|i names|ids"))
+    (System/exit 0)))
+
+(defn execute-analyze-command [arguments]
+  (let [all-account-names (map :name (dao/get-accounts))
+        account-name (io/prompt-from-choices "Account Name: " all-account-names)
+        total-current-value (io/prompt-for-float "Current value of account: ")
+        adata (analysis/analyze account-name total-current-value)]
+    (table (:aggregate-stats adata))
+    (table (:analysis-table adata))
+    (System/exit 0)))
 
 (defn get-completions-for-ns
   ([ns] (get-completions-for-ns ns ""))
@@ -149,8 +160,7 @@
   (dao/init-db)
   (.mkdirs (java.io.File. config/CONFIG-DIRECTORY-PATH))
   (println "Generating completions file for repl...")
-  (generate-completions-file config/COMPLETIONS-FILE-PATH)
-  (System/exit 0))
+  (generate-completions-file config/COMPLETIONS-FILE-PATH))
 
 (defn -main
   [& args]
@@ -167,4 +177,5 @@
                  (repl/run-repl (:port options) server))
         "list" (execute-list-command arguments)
         "add" (execute-add-command arguments)
+        "analyze" (execute-analyze-command arguments)
         "delete" (execute-delete-command arguments)))))
