@@ -1,5 +1,6 @@
 (ns acc.io
   (:require [table.core :refer [table]]
+            [com.rpl.specter :as s]
             [doric.core :as doric]
             [cheshire.core :as c]))
 
@@ -89,3 +90,10 @@
   (flush)
   (let [input (prompt-from-choices message ["yes" "no"])]
     (= input "yes")))
+
+
+(defn format-all-floats
+  "Formats all floats in data."
+  [data format-string]
+  (s/transform [(s/walker float?)]
+               #(format format-string %) data))

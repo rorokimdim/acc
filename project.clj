@@ -9,6 +9,7 @@
                  [cider/cider-nrepl "0.15.1"]
                  [com.layerware/hugsql "0.4.8"]
                  [org.xerial/sqlite-jdbc "3.21.0"]
+                 [com.rpl/specter "1.0.5"]
                  [cheshire "5.8.0"]
                  [table "0.5.0"]
                  [doric "0.9.0"]

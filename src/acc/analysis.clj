@@ -58,7 +58,7 @@
                                (assoc :annual-compounding-rate annual-compounding-rate))))]
     {:aggregate-stats {:total-invested-value total-invested-value
                        :total-current-value total-current-value
-                       :total-gain total-gain
-                       :compounding-rate-stats
-                       (get-stats (map #(:annual-compounding-rate %) analysis-table))}
+                       :total-gain total-gain}
+     :annual-compounding-rate-stats (get-stats
+                                     (map #(:annual-compounding-rate %) analysis-table))
      :analysis-table analysis-table}))

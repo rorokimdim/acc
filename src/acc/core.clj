@@ -2,6 +2,7 @@
   (:gen-class)
   (:require [clojure.tools.cli :refer [parse-opts]]
             [clojure.repl :refer :all]
+            [com.rpl.specter :as s]
             [table.core :refer [table table-str]]
             [com.hypirion.clj-xchart :as c]
             [acc.config :as config]
@@ -133,8 +134,13 @@
         account-name (io/prompt-from-choices "Account Name: " all-account-names)
         total-current-value (io/prompt-for-float "Current value of account: ")
         adata (analysis/analyze account-name total-current-value)]
-    (table (:aggregate-stats adata))
-    (table (:analysis-table adata))
+    (println "*" account-name)
+    (println "** Aggregate stats")
+    (table (io/format-all-floats (:aggregate-stats adata) "%.2f"))
+    (println "** Annual compounding rate stats")
+    (table (io/format-all-floats (:annual-compounding-rate-stats adata) "%.2f"))
+    (println "** Analysis table")
+    (table (io/format-all-floats (:analysis-table adata) "%.2f"))
     (System/exit 0)))
 
 (defn get-completions-for-ns
