@@ -48,9 +48,9 @@
                                        initial-value
                                        years)
                                current-value (+ initial-value gain)
-                               annual-compounding-rate (dec (Math/pow
-                                                             (/ current-value initial-value)
-                                                             (/ 1 years)))]
+                               annual-compounding-rate (* 100 (dec (Math/pow
+                                                                    (/ current-value initial-value)
+                                                                    (/ 1 years))))]
                            (-> m
                                (assoc :years years)
                                (assoc :gain gain)
