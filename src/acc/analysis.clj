@@ -21,12 +21,17 @@
                        (/ (+ (nth sorted-numbers mi)
                              (nth sorted-numbers (dec mi)))
                           2)
-                       (nth sorted-numbers mi))]
+                       (nth sorted-numbers mi))
+        square (fn [x] (* x x))
+        variance (/ (apply + (map #(square (- % average-value)) numbers))
+                    (dec count-values))
+        std-dev (Math/sqrt variance)]
     {:min min-value
      :max max-value
      :count count-values
      :average average-value
-     :median median-value}))
+     :median median-value
+     :std-dev std-dev}))
 
 (defn analyze
   "Analyzes rate of investment of a particular account."
