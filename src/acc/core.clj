@@ -159,6 +159,7 @@
                             ["table"])]
     (with-open [f (java.io.BufferedWriter. (java.io.FileWriter. file-path))]
       (.write f (apply str (interpose \newline completions)))
+      (.write f (str \newline))
       (.write f (apply str (interpose \newline all-account-names))))))
 
 (defn init
