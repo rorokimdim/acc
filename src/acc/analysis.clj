@@ -36,9 +36,10 @@
         total-invested-value (apply + (map :amount records))
         total-gain (- total-current-value total-invested-value)
         sum-of-investment-and-years (apply +
-                                           (map #(* (:amount %)
-                                                    (date-str-to-years-past (:date %)))
-                                                records))
+                                           (map
+                                            #(* (:amount %)
+                                                (date-str-to-years-past (:date %)))
+                                            records))
         total-gain-over-sum-of-investment-and-years (/ total-gain
                                                        sum-of-investment-and-years)
         analysis-table (for [m records]

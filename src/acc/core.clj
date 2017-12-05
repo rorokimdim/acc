@@ -149,7 +149,8 @@
    (map #(str prefix %) ((comp keys ns-publics) (find-ns ns)))))
 
 (defn generate-completions-file [file-path]
-  (let [completions (concat (get-completions-for-ns 'clojure.core)
+  (let [all-account-names (map :name (dao/get-accounts))
+        completions (concat (get-completions-for-ns 'clojure.core)
                             (get-completions-for-ns 'clojure.repl)
                             (get-completions-for-ns 'com.hypirion.clj-xchart "c/")
                             (get-completions-for-ns 'acc.core)
@@ -157,7 +158,8 @@
                             (get-completions-for-ns 'acc.io "io/")
                             ["table"])]
     (with-open [f (java.io.BufferedWriter. (java.io.FileWriter. file-path))]
-      (.write f (apply str (interpose \newline completions))))))
+      (.write f (apply str (interpose \newline completions)))
+      (.write f (apply str (interpose \newline all-account-names))))))
 
 (defn init
   "Initializes things necessary/nice-to-haves for acc."
