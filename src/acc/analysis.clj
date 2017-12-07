@@ -1,14 +1,6 @@
 (ns acc.analysis
   (:require [acc.dao :as dao]
-            [clj-time.core :as t]
-            [clj-time.format :as f]))
-
-(def DATE-FORMATTER (f/formatter "yyyy-MM-dd"))
-
-(defn date-str-to-years-past [s]
-  (let [then (f/parse DATE-FORMATTER s)
-        diff (t/interval then (t/today-at-midnight))]
-    (/ (t/in-days diff) 365.0)))
+            [acc.time :as t]))
 
 (defn get-stats [numbers]
   (let [sorted-numbers (sort numbers)
@@ -43,12 +35,12 @@
         sum-of-investment-and-years (apply +
                                            (map
                                             #(* (:amount %)
-                                                (date-str-to-years-past (:date %)))
+                                                (t/date-str-to-years-past (:date %)))
                                             records))
         total-gain-over-sum-of-investment-and-years (/ total-gain
                                                        sum-of-investment-and-years)
         analysis-table (for [m records]
-                         (let [years (date-str-to-years-past (:date m))
+                         (let [years (t/date-str-to-years-past (:date m))
                                initial-value (:amount m)
                                gain (* total-gain-over-sum-of-investment-and-years
                                        initial-value

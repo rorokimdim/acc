@@ -2,17 +2,24 @@
   (:gen-class)
   (:require [clojure.tools.cli :refer [parse-opts]]
             [clojure.repl :refer :all]
-            [com.rpl.specter :as s]
+            [clojure.spec.alpha :as s]
+            [clojure.java.io :as jio]
+            [com.rpl.specter :as sp]
             [table.core :refer [table table-str]]
             [com.hypirion.clj-xchart :as c]
             [acc.config :as config]
             [acc.repl :as repl]
+            [acc.time :as t]
             [acc.io :as io]
             [acc.dao :as dao]
             [acc.analysis :as analysis]))
 
 (def cli-options
   [["-h" "--help"]
+   ["-f" "--file INPUT-FILE-PATH" "input file path"
+    :default nil
+    :parse-fn #(clojure.string/trim %)
+    :validate [#(.exists (jio/as-file %))]]
    ["-p" "--port PORT" "port number"
     :default config/DEFAULT-REPL-PORT
     :parse-fn #(Integer/parseInt %)
@@ -56,23 +63,47 @@
   (println msg)
   (System/exit status))
 
-(defn handle-add-account []
-  (let [name (io/prompt-for-string "Name of account: ")]
-    (dao/add-account name)))
+(defn handle-add-account [options]
+  (if-let [fpath (:file options)]
+    (let [names (for [r (io/csv-to-map (slurp fpath))
+                      :let [name (:name r)]
+                      :when (not (clojure.string/blank? name))]
+                  name)]
+      (apply dao/add-accounts names))
+    (let [name (io/prompt-for-string "Name of account: ")]
+      (dao/add-accounts name))))
 
-(defn handle-add-investment []
-  (let [all-account-names (map :name (dao/get-accounts))
-        account-name (io/prompt-from-choices "Account Name: " all-account-names)
-        amount (io/prompt-for-float "Amount: ")
-        today (.format
-               (java.text.SimpleDateFormat. "yyyy-MM-dd")
-               (new java.util.Date))
-        date (io/prompt-for-date (format "Date (%s): " today) "yyyy-MM-dd" today)
-        tag (io/prompt-for-string "Tag: " true)]
-    (dao/add-investment :account-name account-name
-                        :amount amount
-                        :date date
-                        :tag tag)))
+(defn handle-add-investment [options]
+  (if-let [fpath (:file options)]
+    (let [all-account-names (map :name (dao/get-accounts))
+          records (for [r (io/csv-to-map (slurp fpath))
+                        :let [{:keys [account-name amount date tag]
+                               :or {tag ""}} r]]
+                    (try (-> r
+                             (assoc :amount (Float/parseFloat amount))
+                             (assoc :date (t/format-date (t/parse-as-date date))))
+                         (catch IllegalArgumentException _
+                           (throw (IllegalArgumentException. (str "Invalid date " date))))
+                         (catch NumberFormatException _
+                           (throw (IllegalArgumentException. (str "Invalid amount " amount))))))
+          invalid-account-names (set (for [r records
+                                           :let [aname (:account-name r)]
+                                           :when (not (some #(= aname %) all-account-names))]
+                                       aname))]
+      (if (empty? invalid-account-names)
+        (apply dao/add-investments records)
+        (do (println "The following accounts have not been defined yet:")
+            (table invalid-account-names))))
+    (let [all-account-names (map :name (dao/get-accounts))
+          account-name (io/prompt-from-choices "Account Name: " all-account-names)
+          amount (io/prompt-for-float "Amount: ")
+          today-str (t/format-date (t/today))
+          date (io/prompt-for-date (format "Date (%s): " today-str) today-str)
+          tag (io/prompt-for-string "Tag: " true)]
+      (dao/add-investment :account-name account-name
+                          :amount amount
+                          :date date
+                          :tag tag))))
 
 (defn handle-list-accounts
   ([] (handle-list-accounts "table"))
@@ -82,13 +113,14 @@
   ([] (handle-list-investments "table"))
   ([oformat] (io/print-formatted (dao/get-investments) oformat)))
 
-(defn execute-add-command [arguments]
+(defn execute-add-command [arguments options]
   (case (first arguments)
-    "account" (handle-add-account)
-    "a" (handle-add-account)
-    "investment" (handle-add-investment)
-    "i" (handle-add-investment)
-    (println "Syntax: add account|a|investment|i")))
+    "account" (handle-add-account options)
+    "a" (handle-add-account options)
+    "investment" (handle-add-investment options)
+    "i" (handle-add-investment options)
+    (println "Syntax: add account|a|investment|i"))
+  (System/exit 0))
 
 (defn execute-list-command [arguments]
   (let [dtype (first arguments)
@@ -178,13 +210,16 @@
     (dao/init-db)
     (if exit-message
       (exit (if ok? 0 1) exit-message)
-      (case action
-        "init" (init)
-        "repl" (let [server (repl/start-server (:port options))]
-                 (.addShutdownHook (Runtime/getRuntime)
-                                   (Thread. (fn [] (repl/stop-server server))))
-                 (repl/run-repl (:port options) server))
-        "list" (execute-list-command arguments)
-        "add" (execute-add-command arguments)
-        "analyze" (execute-analyze-command arguments)
-        "delete" (execute-delete-command arguments)))))
+      (try
+        (case action
+          "init" (init)
+          "repl" (let [server (repl/start-server (:port options))]
+                   (.addShutdownHook (Runtime/getRuntime)
+                                     (Thread. (fn [] (repl/stop-server server))))
+                   (repl/run-repl (:port options) server))
+          "list" (execute-list-command arguments)
+          "add" (execute-add-command arguments options)
+          "analyze" (execute-analyze-command arguments)
+          "delete" (execute-delete-command arguments))
+        (catch Exception e
+          (println (str e)))))))

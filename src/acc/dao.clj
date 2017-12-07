@@ -1,6 +1,8 @@
 (ns acc.dao
-  (:require [clojure.java.jdbc :as jdbc]
+  (:require [clojure.spec.alpha :as s]
+            [clojure.java.jdbc :as jdbc]
             [acc.db :refer [DB] :as db]
+            [acc.time :as t]
             [acc.accounts :as accounts]
             [acc.investments :as investments])
   )
@@ -14,12 +16,15 @@
     (investments/create-index-on-account-name tx)
     (investments/create-index-on-date tx)))
 
-(defn add-account
-  "Adds an account with name NAME."
-  [name]
-  (jdbc/with-db-connection [c DB]
-    (db/enable-foreign-keys c)
-    (accounts/add c {:name (clojure.string/lower-case name)})))
+(defn add-accounts
+  "Adds new accounts."
+  [& names]
+  (jdbc/with-db-transaction [tx DB]
+    (doseq [name names]
+      (accounts/add tx {:name (clojure.string/lower-case name)}))))
+
+(s/fdef add-accounts :args (s/cat :names (s/coll-of ::accounts/account-name)))
+
 
 (defn delete-accounts
   "Deletes account records by names."
@@ -28,20 +33,40 @@
     (db/enable-foreign-keys c)
     (accounts/delete c {:names names})))
 
+(s/fdef delete-accounts :args (s/cat :names (s/coll-of ::accounts/account-name)))
 
-(defn add-investment
-  "Adds an investment."
-  [& {:keys [account-name amount date tag]
-      :or {date (.format
-                 (java.text.SimpleDateFormat. "yyyy-MM-dd")
-                 (new java.util.Date))
-           tag ""}}]
+(defn add-investments
+  "Adds investment records.
+
+  Each record must be a map with following fields:
+      account-name: name of account (required)
+      amount: value of investment (required)
+      date: date of investments (optional, default to today's date)
+      tag: any tag for the record (optional)"
+  [& records]
   (jdbc/with-db-connection [c DB]
     (db/enable-foreign-keys c)
-    (investments/add c {:account_name (clojure.string/lower-case account-name)
-                        :amount amount
-                        :date date
-                        :tag (clojure.string/lower-case tag)})))
+    (doseq [r records
+            :let [{:keys [account-name amount date tag]
+                   :or {date (t/format-date (t/today))
+                        tag ""}} r]]
+      (investments/add c {:account_name (clojure.string/lower-case account-name)
+                          :amount amount
+                          :date date
+                          :tag (clojure.string/lower-case tag)}))))
+
+(s/fdef add-investments :args (s/cat :records (s/coll-of ::investments/investment)))
+
+(defn add-investment
+  "Adds an investment.
+
+  Kwargs:
+      account-name: name of account (required)
+      amount: value of investment (required)
+      date: date of investments (optional, default to today's date)
+      tag: any tag for the record (optional)"
+  [& record]
+  (add-investments record))
 
 (defn delete-investments
   "Deletes investment records by ids."

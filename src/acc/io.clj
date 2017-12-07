@@ -2,12 +2,53 @@
   (:require [table.core :refer [table]]
             [com.rpl.specter :as s]
             [doric.core :as doric]
-            [cheshire.core :as c]))
+            [cheshire.core :as c]
+            [clojure-csv.core :as csv]
+            [acc.time :as t]
+            [clojure.java.io :as io]))
 
 (def JSON-PRETTY-PRINTER
   (c/create-pretty-printer
    (assoc c/default-pretty-print-options
           :indent-arrays? true)))
+
+(defn keywordize-map
+  "Keywordizes map keys."
+  [m]
+  (into {} (for [[k v] m]
+             [(keyword (-> k
+                           clojure.string/lower-case
+                           (clojure.string/replace #"[^A-Za-z0-9]" "-"))) v])))
+
+(defn csv-to-map
+  "Parses a csv to a map.
+
+  Kwargs:
+      :delimiter - A character that contains the cell separator for
+                   each column in a row.  Default value: \\,
+      :end-of-line - A string containing the end-of-line character
+                     for reading CSV files. If this setting is nil then
+                     \\n and \\r\\n are both accepted.  Default value: nil
+      :quote-char - A character that is used to begin and end a quoted cell.
+                    Default value: \\\"
+      :strict - If this variable is true, the parser will throw an
+                exception on parse errors that are recoverable but
+                not to spec or otherwise nonsensical.  Default value: false"
+  [data & {:keys [delimiter end-of-line quote-char strict]
+           :or {delimiter \,
+                end-of-line nil
+                quote-char \"
+                strict false}}]
+  (let [parsed (csv/parse-csv
+                data
+                :delimiter delimiter
+                :end-of-line end-of-line
+                :quote-char quote-char
+                :strict strict)
+        output (map (partial zipmap (first parsed))
+                    (rest parsed))]
+    (map keywordize-map output)))
+
 
 (defn print-formatted
   "Prints formatted form of any data.
@@ -59,18 +100,17 @@
 
 (defn prompt-for-date
   "Prompts for a date string."
-  [message date-format default]
+  [message default]
   (print message)
   (flush)
   (let [s (clojure.string/trim (read-line))]
     (if (clojure.string/blank? s)
       default
       (try
-        (.format (java.text.SimpleDateFormat. date-format)
-                 (.parse (java.text.SimpleDateFormat. date-format) s))
-        (catch java.text.ParseException e
-          (do (println "Invalid date. Must be for format" date-format)
-              (prompt-for-date message date-format default)))))))
+        (t/format-date (t/parse-as-date s))
+        (catch IllegalArgumentException e
+          (do (println "Invalid date. Must be for format" t/STANDARD-DATE-FORMAT)
+              (prompt-for-date message default)))))))
 
 (defn prompt-from-choices [message choices]
   "Prompts for a string which should be one of the given CHOICES."
