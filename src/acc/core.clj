@@ -40,6 +40,7 @@
         "  add      Adds an account or investment record"
         "  analyze  Analyzes a particular account"
         "  delete   Deletes account or investment records"
+        "  sql      Runs a sql query"
         ""]
        (clojure.string/join \newline)))
 
@@ -55,7 +56,7 @@
       errors
       {:exit-message (error-msg errors)}
       (and (< 0 (count arguments))
-           (#{"init" "list" "add" "analyze" "delete" "repl"} (first arguments)))
+           (#{"init" "list" "add" "analyze" "delete" "sql" "repl"} (first arguments)))
       {:action (first arguments) :options options :arguments (rest arguments)}
       :else {:exit-message (usage summary)})))
 
@@ -176,6 +177,15 @@
     (table (io/format-all-floats (:analysis-table adata) "%.2f"))
     (System/exit 0)))
 
+(defn execute-sql-command [arguments options]
+  (let [fpath (:file options)
+        sql (or (first arguments)
+                (if fpath (slurp fpath) nil))]
+    (if sql
+      (table (dao/execute-sql sql))
+      (println "Syntax: sql \"SQL STRING\"")))
+  (System/exit 0))
+
 (defn get-completions-for-ns
   ([ns] (get-completions-for-ns ns ""))
   ([ns prefix]
@@ -221,7 +231,8 @@
           "list" (execute-list-command arguments)
           "add" (execute-add-command arguments options)
           "analyze" (execute-analyze-command arguments)
-          "delete" (execute-delete-command arguments))
+          "delete" (execute-delete-command arguments)
+          "sql" (execute-sql-command arguments options))
         (catch Exception e
           (throw e)
           (println (str e)))))))

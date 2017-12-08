@@ -1,6 +1,7 @@
 (ns acc.dao
   (:require [clojure.spec.alpha :as s]
             [clojure.java.jdbc :as jdbc]
+            [hugsql.core :as hugsql]
             [acc.db :refer [DB] :as db]
             [acc.time :as t]
             [acc.accounts :as accounts]
@@ -16,6 +17,11 @@
     (investments/create-table tx)
     (investments/create-index-on-account-name tx)
     (investments/create-index-on-date tx)))
+
+(defn execute-sql
+  "Execute a sql query."
+  [sql]
+  (hugsql/db-run DB sql))
 
 (defn add-accounts
   "Adds new accounts."
