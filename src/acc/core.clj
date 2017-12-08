@@ -180,7 +180,8 @@
 (defn execute-sql-command [arguments options]
   (let [fpath (:file options)
         sql (or (first arguments)
-                (if fpath (slurp fpath) nil))]
+                (if fpath (slurp fpath) nil)
+                (io/prompt-for-string "SQL: "))]
     (if sql
       (table (dao/execute-sql sql))
       (println "Syntax: sql \"SQL STRING\"")))
