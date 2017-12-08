@@ -23,11 +23,17 @@
       true)
     (catch IllegalArgumentException _ false)))
 
-(defn date-str-to-years-past [s]
+(defn date-str-to-years-past
   "Gets years past since given date string."
+  [s]
   (let [then (parse-as-date s)
-        diff (t/interval then (t/today-at-midnight))]
-    (/ (t/in-days diff) 365.0)))
+        midnight-today (t/today-at-midnight)
+        is-then-in-future (t/after? then midnight-today)
+        diff (if is-then-in-future
+               (t/interval (t/today-at-midnight) then)
+               (t/interval then (t/today-at-midnight)))
+        days (/ (t/in-days diff) 365.0)]
+    (if is-then-in-future (- days) days)))
 
 (defn format-date
   "Formats data object as a string in STANDARD-DATE-FORMAT."
