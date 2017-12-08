@@ -5,12 +5,15 @@
 (def STANDARD-DATE-FORMAT "yyyy-MM-dd")
 (def DATE-FORMATTER (f/formatter (t/default-time-zone)
                                  STANDARD-DATE-FORMAT
+                                 "yyyy-MM-dd H:m:s Z"
                                  "MM/dd/yyyy"))
 
 (defn parse-as-date
   "Parses a string into org.joda.time.DateTime object."
   [s]
-  (f/parse DATE-FORMATTER s))
+  (if (string? s)
+    (f/parse DATE-FORMATTER s)
+    (throw (IllegalArgumentException. "Date string cannot be nil"))))
 
 (defn valid-date-str?
   "Checks if a string is a valid date string."

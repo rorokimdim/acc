@@ -8,7 +8,7 @@
 CREATE TABLE IF NOT EXISTS investment (
   id INTEGER PRIMARY KEY,
   account_name TEXT,
-  amount REAL CHECK(amount > 0),
+  amount REAL,
   date TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d', 'now')) CHECK (date IS strftime('%Y-%m-%d',date)),
   tag TEXT,
   FOREIGN KEY(account_name) REFERENCES account(name) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED

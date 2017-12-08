@@ -4,7 +4,8 @@
             [acc.db :refer [DB] :as db]
             [acc.time :as t]
             [acc.accounts :as accounts]
-            [acc.investments :as investments])
+            [acc.investments :as investments]
+            [acc.io :as io])
   )
 
 (defn init-db
@@ -21,7 +22,7 @@
   [& names]
   (jdbc/with-db-transaction [tx DB]
     (doseq [name names]
-      (accounts/add tx {:name (clojure.string/lower-case name)}))))
+      (accounts/add tx {:name (io/sluggify name)}))))
 
 (s/fdef add-accounts :args (s/cat :names (s/coll-of ::accounts/account-name)))
 
@@ -53,7 +54,7 @@
       (investments/add c {:account_name (clojure.string/lower-case account-name)
                           :amount amount
                           :date date
-                          :tag (clojure.string/lower-case tag)}))))
+                          :tag (io/sluggify tag)}))))
 
 (s/fdef add-investments :args (s/cat :records (s/coll-of ::investments/investment)))
 

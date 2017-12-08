@@ -80,9 +80,10 @@
                         :let [{:keys [account-name amount date tag]
                                :or {tag ""}} r]]
                     (try (-> r
+                             (assoc :account-name (io/sluggify account-name))
                              (assoc :amount (Float/parseFloat amount))
                              (assoc :date (t/format-date (t/parse-as-date date))))
-                         (catch IllegalArgumentException _
+                         (catch IllegalArgumentException e
                            (throw (IllegalArgumentException. (str "Invalid date " date))))
                          (catch NumberFormatException _
                            (throw (IllegalArgumentException. (str "Invalid amount " amount))))))
@@ -111,7 +112,7 @@
 
 (defn handle-list-investments
   ([] (handle-list-investments "table"))
-  ([oformat] (io/print-formatted (dao/get-investments) oformat)))
+  ([oformat] (io/print-formatted (io/format-all-floats (dao/get-investments) "%.2f") oformat)))
 
 (defn execute-add-command [arguments options]
   (case (first arguments)
@@ -222,4 +223,5 @@
           "analyze" (execute-analyze-command arguments)
           "delete" (execute-delete-command arguments))
         (catch Exception e
+          (throw e)
           (println (str e)))))))

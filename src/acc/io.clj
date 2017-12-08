@@ -12,13 +12,21 @@
    (assoc c/default-pretty-print-options
           :indent-arrays? true)))
 
+(defn sluggify [s]
+  "Sluggifies a string."
+  (-> s
+      clojure.string/trim
+      clojure.string/lower-case
+      (clojure.string/replace #"[^A-Za-z0-9]" "-")
+      (clojure.string/replace #"-+" "-")
+      (#(if (> (count %) 1) (clojure.string/replace % #"^-+" "") %))
+      (#(if (> (count %) 1) (clojure.string/replace % #"-+$" "") %))))
+
 (defn keywordize-map
   "Keywordizes map keys."
   [m]
   (into {} (for [[k v] m]
-             [(keyword (-> k
-                           clojure.string/lower-case
-                           (clojure.string/replace #"[^A-Za-z0-9]" "-"))) v])))
+             [(keyword (sluggify k)) v])))
 
 (defn csv-to-map
   "Parses a csv to a map.
