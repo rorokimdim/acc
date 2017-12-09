@@ -1,4 +1,4 @@
--- src/acc/sql/account.sql
+-- src/acc/dao/sql/account.sql
 -- Investment Accounts
 
 -- :name create-table

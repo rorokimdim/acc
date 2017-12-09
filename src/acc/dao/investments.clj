@@ -1,13 +1,11 @@
-(ns acc.investments)
-
-(ns acc.investments
+(ns acc.dao.investments
   (:require [hugsql.core :as hugsql]
             [clojure.spec.alpha :as s]
-            [acc.accounts :as accounts]
+            [acc.dao.accounts :as accounts]
             [acc.time :as t]))
 
-(hugsql/def-db-fns "acc/sql/investment.sql")
-(hugsql/def-sqlvec-fns "acc/sql/investment.sql")
+(hugsql/def-db-fns "acc/dao/sql/investment.sql")
+(hugsql/def-sqlvec-fns "acc/dao/sql/investment.sql")
 
 (s/def ::amount (s/and number? #(> % 0)))
 (s/def ::tag string?)

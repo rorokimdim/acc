@@ -1,4 +1,4 @@
-(ns acc.db
+(ns acc.dao.db
   (:require [hugsql.core :as hugsql]
             [acc.config :as config]))
 
@@ -6,4 +6,4 @@
          :subprotocol "sqlite"
          :subname config/DATABASE-FILE-PATH})
 
-(hugsql/def-db-fns "acc/sql/common.sql")
+(hugsql/def-db-fns "acc/dao/sql/common.sql")

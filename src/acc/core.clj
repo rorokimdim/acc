@@ -8,10 +8,10 @@
             [table.core :refer [table table-str]]
             [com.hypirion.clj-xchart :as c]
             [acc.config :as config]
+            [acc.dao.core :as dao]
             [acc.repl :as repl]
             [acc.time :as t]
             [acc.io :as io]
-            [acc.dao :as dao]
             [acc.analysis :as analysis]))
 
 (def cli-options

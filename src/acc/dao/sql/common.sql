@@ -1,4 +1,4 @@
--- src/acc/sql/common.sql
+-- src/acc/dao/sql/common.sql
 
 -- :name enable-foreign-keys
 -- :command :execute

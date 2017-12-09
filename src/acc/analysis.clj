@@ -1,5 +1,5 @@
 (ns acc.analysis
-  (:require [acc.dao :as dao]
+  (:require [acc.dao.core :as dao]
             [acc.time :as t]))
 
 (defn get-stats [numbers]

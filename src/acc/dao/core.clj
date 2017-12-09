@@ -1,11 +1,11 @@
-(ns acc.dao
+(ns acc.dao.core
   (:require [clojure.spec.alpha :as s]
             [clojure.java.jdbc :as jdbc]
             [hugsql.core :as hugsql]
-            [acc.db :refer [DB] :as db]
+            [acc.dao.db :refer [DB] :as db]
+            [acc.dao.accounts :as accounts]
+            [acc.dao.investments :as investments]
             [acc.time :as t]
-            [acc.accounts :as accounts]
-            [acc.investments :as investments]
             [acc.io :as io])
   )
 
