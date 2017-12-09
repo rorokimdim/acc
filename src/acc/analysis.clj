@@ -64,5 +64,7 @@
                        :total-current-value total-current-value
                        :total-gain total-gain}
      :annual-compounding-rate-stats (get-stats
-                                     (map #(:annual-compounding-rate %) analysis-table))
+                                     (map #(:annual-compounding-rate %)
+                                          (filter #(pos? (:amount %))
+                                                  analysis-table)))
      :analysis-table analysis-table}))
