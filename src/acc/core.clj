@@ -34,13 +34,14 @@
         options-summary
         ""
         "Actions:"
-        "  init     Initializes things necessary/nice-to-haves for acc"
-        "  repl     Starts a repl"
-        "  list     Lists all stored accounts or investments"
-        "  add      Adds an account or investment record"
-        "  analyze  Analyzes a particular account"
-        "  delete   Deletes account or investment records"
-        "  sql      Runs a sql query"
+        "  init       Initializes things necessary/nice-to-haves for acc"
+        "  repl       Starts a repl"
+        "  list       Lists all stored accounts or investments"
+        "  add        Adds an account or investment record"
+        "  analyze    Analyzes a particular account"
+        "  summarize  Summarizes all accounts"
+        "  delete     Deletes account or investment records"
+        "  sql        Runs a sql query"
         ""]
        (clojure.string/join \newline)))
 
@@ -56,7 +57,7 @@
       errors
       {:exit-message (error-msg errors)}
       (and (< 0 (count arguments))
-           (#{"init" "list" "add" "analyze" "delete" "sql" "repl"} (first arguments)))
+           (#{"init" "list" "add" "summarize" "analyze" "delete" "sql" "repl"} (first arguments)))
       {:action (first arguments) :options options :arguments (rest arguments)}
       :else {:exit-message (usage summary)})))
 
@@ -187,6 +188,16 @@
       (println "Syntax: sql \"SQL STRING\"")))
   (System/exit 0))
 
+(defn execute-summarize-command [arguments options]
+  "Summarizes all accounts."
+  (table
+   (io/format-all-floats
+    (dao/execute-sql
+     "SELECT SUM(amount),account_name FROM investment
+     GROUP BY account_name
+     ORDER BY account_name") "%.2f"))
+  (System/exit 0))
+
 (defn get-completions-for-ns
   ([ns] (get-completions-for-ns ns ""))
   ([ns prefix]
@@ -231,6 +242,8 @@
                    (repl/run-repl (:port options) server))
           "list" (execute-list-command arguments)
           "add" (execute-add-command arguments options)
+          "summarize" (execute-summarize-command arguments options)
+          "s" (execute-summarize-command arguments options)
           "analyze" (execute-analyze-command arguments)
           "delete" (execute-delete-command arguments)
           "sql" (execute-sql-command arguments options))
