@@ -209,7 +209,7 @@
                             (get-completions-for-ns 'clojure.repl)
                             (get-completions-for-ns 'com.hypirion.clj-xchart "c/")
                             (get-completions-for-ns 'acc.core)
-                            (get-completions-for-ns 'acc.dao "dao/")
+                            (get-completions-for-ns 'acc.dao.core "dao/")
                             (get-completions-for-ns 'acc.io "io/")
                             ["table"])]
     (with-open [f (java.io.BufferedWriter. (java.io.FileWriter. file-path))]
