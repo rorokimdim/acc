@@ -3,6 +3,7 @@
             [acc.time :as t]))
 
 (defn get-stats [numbers]
+  "Gets stats on give list of numbers."
   (if (empty? numbers)
     {}
     (let [sorted-numbers (sort numbers)
@@ -26,6 +27,41 @@
        :average average-value
        :median median-value
        :std-dev std-dev})))
+
+(defn compute-investment-growth
+  "Lazily computes investment growth over time."
+  [& {:keys [n
+             starting-balance
+             compounding-rate
+             expense-per-year
+             investment-sales-tax]
+      :or {n 0
+           starting-balance 100000
+           compounding-rate 0.05
+           expense-per-year 0
+           investment-sales-tax 0}}]
+  (let [investment-lost-per-year (-> expense-per-year
+                                     (/ (- 1 investment-sales-tax))
+                                     float
+                                     Math/round)
+        balance (-> starting-balance
+                    (* (Math/pow (inc compounding-rate) 1))
+                    (- investment-lost-per-year)
+                    Math/round)]
+    (lazy-seq (cons
+               (let [all {:t n
+                          :starting-balance starting-balance
+                          :expense expense-per-year
+                          :investment-lost-per-year investment-lost-per-year
+                          :ending-balance balance}]
+                 (if (zero? expense-per-year)
+                   (dissoc all :expense :investment-lost-per-year)
+                   all))
+               (compute-investment-growth :n (inc n)
+                                          :starting-balance balance
+                                          :compounding-rate compounding-rate
+                                          :expense-per-year expense-per-year
+                                          :investment-sales-tax investment-sales-tax)))))
 
 (defn analyze
   "Analyzes rate of investment of a particular account."
