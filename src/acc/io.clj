@@ -95,16 +95,39 @@
              (println "Invalid input. Cannot be empty.")
              (prompt-for-string message)))))))
 
+(defn- prompt-for-number
+  "Prompts for a number."
+  [initial-input to-number-parser error-message message]
+  (let [parser #(try (to-number-parser %1)
+                     (catch NumberFormatException e
+                       (do (println error-message)
+                           (prompt-for-number nil to-number-parser error-message message))))]
+    (if initial-input
+      (parser initial-input)
+      (do
+        (print message)
+        (flush)
+        (let [s (clojure.string/trim (read-line))]
+          (parser s))))))
+
+
 (defn prompt-for-float
   "Prompts for a float."
-  [message]
-  (print message)
-  (flush)
-  (let [s (clojure.string/trim (read-line))]
-    (try (Float/parseFloat s)
-         (catch NumberFormatException e
-           (do (println "Invalid input. Must be a valid real number.")
-               (prompt-for-float message))))))
+  ([message] (prompt-for-float nil message))
+  ([initial-input message]
+   (prompt-for-number initial-input
+                      #(Float/parseFloat %)
+                      "Invalid input. Must be a valid real number."
+                      message)))
+
+(defn prompt-for-integer
+  "Prompts for an integer."
+  ([message] (prompt-for-integer nil message))
+  ([initial-input message]
+   (prompt-for-number initial-input
+                      #(Integer/parseInt %)
+                      "Invalid input. Must be a valid integer."
+                      message)))
 
 (defn prompt-for-date
   "Prompts for a date string."

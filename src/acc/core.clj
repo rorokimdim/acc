@@ -42,6 +42,7 @@
         "  summarize  Summarizes all accounts"
         "  delete     Deletes account or investment records"
         "  sql        Runs a sql query"
+        "  compute    Runs specific computations"
         ""]
        (clojure.string/join \newline)))
 
@@ -57,7 +58,8 @@
       errors
       {:exit-message (error-msg errors)}
       (and (< 0 (count arguments))
-           (#{"init" "list" "add" "summarize" "analyze" "delete" "sql" "repl"} (first arguments)))
+           (#{"init" "list" "add" "summarize" "analyze" "delete" "sql" "repl" "compute"}
+            (first arguments)))
       {:action (first arguments) :options options :arguments (rest arguments)}
       :else {:exit-message (usage summary)})))
 
@@ -129,7 +131,7 @@
   (let [dtype (first arguments)
         oformat (second arguments)]
     (case dtype
-      "account" (handle-list-accounts)
+      "account" (handle-list-accounts oformat)
       "a" (handle-list-accounts oformat)
       "investment" (handle-list-investments oformat)
       "i" (handle-list-investments oformat)
@@ -188,8 +190,9 @@
       (println "Syntax: sql \"SQL STRING\"")))
   (System/exit 0))
 
-(defn execute-summarize-command [arguments options]
+(defn execute-summarize-command
   "Summarizes all accounts."
+  [arguments options]
   (table
    (io/format-all-floats
     (dao/execute-sql
@@ -197,6 +200,40 @@
      GROUP BY account_name
      ORDER BY account_name") "%.2f"))
   (System/exit 0))
+
+(defn handle-compute-growth
+  ([] (handle-compute-growth []))
+  ([arguments]
+   (let [n (or (nth arguments 0 nil) 20)
+         starting-balance (io/prompt-for-integer (nth arguments 1 nil)
+                                                 "Starting Balance: ")
+         compounding-rate (io/prompt-for-float (nth arguments 2 nil)
+                                               "Compounding rate: ")
+         oformat (nth arguments 3 "table")
+         expense-per-year (if (seq arguments) 0
+                              (io/prompt-for-float "Expense per year covered from this investment: "))
+         investment-sales-tax  (if (zero? expense-per-year) 0
+                                   (io/prompt-for-float "Investment sales tax: "))]
+     (io/print-formatted
+      (take (if (string? n)
+              (Integer/parseInt n) n)
+            (analysis/compute-investment-growth
+             :starting-balance starting-balance
+             :compounding-rate compounding-rate
+             :expense-per-year expense-per-year
+             :investment-sales-tax investment-sales-tax)) oformat))))
+
+(defn execute-compute-command
+  "Runs a specific computation."
+  [arguments options]
+  (let [ctype (first arguments)]
+    (case ctype
+      "growth" (handle-compute-growth (rest arguments))
+      "g" (handle-compute-growth (rest arguments))
+      (println "Syntax: compute growth|g"
+               "[n=20]"
+               "[starting-balance] [compounding-rate] [csv|html|json|org|table|unicode]"))
+    (System/exit 0)))
 
 (defn get-completions-for-ns
   ([ns] (get-completions-for-ns ns ""))
@@ -246,7 +283,8 @@
           "s" (execute-summarize-command arguments options)
           "analyze" (execute-analyze-command arguments)
           "delete" (execute-delete-command arguments)
-          "sql" (execute-sql-command arguments options))
+          "sql" (execute-sql-command arguments options)
+          "compute" (execute-compute-command arguments options))
         (catch Exception e
           (throw e)
           (println (str e)))))))
