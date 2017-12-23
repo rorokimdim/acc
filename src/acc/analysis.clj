@@ -33,11 +33,13 @@
   [& {:keys [n
              starting-balance
              compounding-rate
+             investment-per-year
              expense-per-year
              investment-sales-tax]
       :or {n 0
            starting-balance 100000
            compounding-rate 0.05
+           investment-per-year 0
            expense-per-year 0
            investment-sales-tax 0}}]
   (let [investment-lost-per-year (-> expense-per-year
@@ -47,19 +49,25 @@
         balance (-> starting-balance
                     (* (Math/pow (inc compounding-rate) 1))
                     (- investment-lost-per-year)
+                    (+ investment-per-year)
                     Math/round)]
     (lazy-seq (cons
                (let [all {:t n
                           :starting-balance starting-balance
-                          :expense expense-per-year
+                          :investment-per-year (Math/round investment-per-year)
+                          :expense (Math/round expense-per-year)
                           :investment-lost-per-year investment-lost-per-year
-                          :ending-balance balance}]
-                 (if (zero? expense-per-year)
-                   (dissoc all :expense :investment-lost-per-year)
-                   all))
+                          :ending-balance balance}
+                     keys-to-exclude (if (> 1 expense-per-year)
+                                       [:expense :investment-lost-per-year] [])
+                     keys-to-exclude (if (> 1 investment-per-year)
+                                       (concat keys-to-exclude [:investment-per-year])
+                                       keys-to-exclude)]
+                 (apply (partial dissoc all) keys-to-exclude))
                (compute-investment-growth :n (inc n)
                                           :starting-balance balance
                                           :compounding-rate compounding-rate
+                                          :investment-per-year investment-per-year
                                           :expense-per-year expense-per-year
                                           :investment-sales-tax investment-sales-tax)))))
 

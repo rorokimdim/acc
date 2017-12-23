@@ -210,6 +210,8 @@
          compounding-rate (io/prompt-for-float (nth arguments 2 nil)
                                                "Compounding rate: ")
          oformat (nth arguments 3 "table")
+         investment-per-year (if (seq arguments) 0
+                                 (io/prompt-for-float "Investment per year: "))
          expense-per-year (if (seq arguments) 0
                               (io/prompt-for-float "Expense per year covered from this investment: "))
          investment-sales-tax  (if (zero? expense-per-year) 0
@@ -220,6 +222,7 @@
             (analysis/compute-investment-growth
              :starting-balance starting-balance
              :compounding-rate compounding-rate
+             :investment-per-year investment-per-year
              :expense-per-year expense-per-year
              :investment-sales-tax investment-sales-tax)) oformat))))
 
