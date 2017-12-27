@@ -28,57 +28,90 @@
        :median median-value
        :std-dev std-dev})))
 
+(defn compute-amortized-loan-payment-per-month
+  "Computes amortized payment per month.
+
+  See derivation in https://en.wikipedia.org/wiki/Amortization_calculator."
+  [loan-amount annual-interest-rate loan-duration-years]
+  (let [r (inc (/ annual-interest-rate 12))
+        n (* loan-duration-years 12)
+        r_pow_n (Math/pow r n)
+        payment-per-month (-> loan-amount
+                              (* r_pow_n)
+                              (* (dec r))
+                              (/ (dec r_pow_n))
+                              (Math/round))]
+    payment-per-month))
+
 (defn compute-mortgage-balance
   "Lazily computes mortgage balance over time."
   [& {:keys [n
+             cumulative-interest-paid
+             cumulative-net-other-costs
+             property-tax-rate
+             income-tax-rate
+
              purchase-price
              downpayment
-             interest-rate
-             duration-years
              principal-remaining
-             payment-per-month
-             cumulative-interest-paid
-             cumulative-principal-paid]
+             duration-years
+             interest-rate
+             payment-per-month]
       :or {n 0
-           purchase-price 100000
-           principal-remaining (Math/round (- purchase-price downpayment))
-           downpayment (* 0.20 purchase-price)
-           cumulative-principal-paid 0
            cumulative-interest-paid 0
-           interest-rate 0.04
-           duration-years 30
-           payment-per-month (let [r (/ interest-rate 12)
-                                   N (* 12 duration-years)
-                                   rr (Math/pow (inc r) N)
-                                   numerator (* r principal-remaining rr)
-                                   denominator (dec rr)]
-                               (Math/round (/ numerator denominator)))}}]
-  (let [interest-due-per-month (-> principal-remaining
-                                   (* interest-rate)
-                                   (/ 12)
-                                   (Math/round))
-        principal-paid-per-month (- payment-per-month interest-due-per-month)
+           cumulative-net-other-costs 0
+           property-tax-rate 0.01
+           income-tax-rate 0.33
+           duration-years 30}}]
+  (let [downpayment (or downpayment (* 0.20 purchase-price))
+        principal-remaining (or principal-remaining
+                                (Math/round (- purchase-price downpayment)))
+        interest-paid-per-month (-> principal-remaining
+                                    (* interest-rate)
+                                    (/ 12)
+                                    (Math/round))
+        payment-per-month (or payment-per-month
+                              (compute-amortized-loan-payment-per-month
+                               principal-remaining
+                               interest-rate
+                               duration-years))
+        principal-paid-per-month (- payment-per-month interest-paid-per-month)
         principal-paid (* 12 principal-paid-per-month)
-        interest-paid (* 12 interest-due-per-month)]
-    (lazy-seq (cons {:t n
-                     :principal-remaining principal-remaining
-                     :payment-per-month payment-per-month
-                     :interest-paid interest-paid
-                     :principal-paid principal-paid
-                     :cumulative-principal-paid (+ cumulative-principal-paid principal-paid)
-                     :cumulative-interest-paid (+ cumulative-interest-paid interest-paid)}
-                    (compute-mortgage-balance :n (inc n)
-                                              :principal-remaining (-> principal-remaining
-                                                                       (- (* principal-paid-per-month 12))
-                                                                       (float)
-                                                                       (Math/round))
-                                              :purchase-price purchase-price
-                                              :downpayment downpayment
-                                              :cumulative-principal-paid (+ cumulative-principal-paid principal-paid)
-                                              :cumulative-interest-paid (+ cumulative-interest-paid interest-paid)
-                                              :interest-rate interest-rate
-                                              :duration-years (dec duration-years)
-                                              :payment-per-month payment-per-month)))))
+        interest-paid (* 12 interest-paid-per-month)
+        cost-property-tax (Math/round (* property-tax-rate purchase-price))
+        cost-maintenance (Math/round (* 0.01 purchase-price))
+        cost-insurance (Math/round (* 0.002 purchase-price))
+        tax-deductible (+ interest-paid
+                          (* property-tax-rate purchase-price))
+        tax-savings (Math/round (* income-tax-rate tax-deductible))
+        net-other-costs (+ cost-property-tax
+                           cost-insurance
+                           cost-maintenance
+                           (- tax-savings))
+        net-other-costs-ppm (Math/round (/ net-other-costs 12.0))
+        cumulative-net-other-costs (+ cumulative-net-other-costs net-other-costs)
+        cumulative-interest-paid (+ cumulative-interest-paid interest-paid)]
+    (when (pos? principal-remaining)
+      (lazy-seq (cons {:t n
+                       :principal principal-remaining
+                       :ppm payment-per-month
+                       :interest-ppm interest-paid-per-month
+                       :principal-ppm principal-paid-per-month
+                       :net-other-costs-ppm net-other-costs-ppm
+                       :cumulative-net-other-costs cumulative-net-other-costs
+                       :cumulative-interest-paid cumulative-interest-paid}
+                      (compute-mortgage-balance :n (inc n)
+                                                :cumulative-interest-paid cumulative-interest-paid
+                                                :cumulative-net-other-costs cumulative-net-other-costs
+                                                :purchase-price purchase-price
+                                                :downpayment downpayment
+                                                :principal-remaining (-> principal-remaining
+                                                                         (- (* principal-paid-per-month 12))
+                                                                         (float)
+                                                                         (Math/round))
+                                                :interest-rate interest-rate
+                                                :duration-years duration-years
+                                                :payment-per-month payment-per-month))))))
 
 (defn compute-investment-growth
   "Lazily computes investment growth over time."
