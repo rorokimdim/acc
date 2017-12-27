@@ -39,122 +39,251 @@
         payment-per-month (-> loan-amount
                               (* r_pow_n)
                               (* (dec r))
-                              (/ (dec r_pow_n))
-                              (Math/round))]
+                              (/ (dec r_pow_n)))]
     payment-per-month))
 
 (defn compute-mortgage-balance
-  "Lazily computes mortgage balance over time."
-  [& {:keys [n
-             cumulative-interest-paid
-             cumulative-net-other-costs
-             property-tax-rate
-             income-tax-rate
+  "Computes mortgage balance over time.
 
-             purchase-price
-             downpayment
-             principal-remaining
-             duration-years
-             interest-rate
-             payment-per-month]
-      :or {n 0
-           cumulative-interest-paid 0
-           cumulative-net-other-costs 0
-           property-tax-rate 0.01
-           income-tax-rate 0.33
-           duration-years 30}}]
-  (let [downpayment (or downpayment (* 0.20 purchase-price))
-        principal-remaining (or principal-remaining
-                                (Math/round (- purchase-price downpayment)))
-        interest-paid-per-month (-> principal-remaining
-                                    (* interest-rate)
-                                    (/ 12)
-                                    (Math/round))
-        payment-per-month (or payment-per-month
-                              (compute-amortized-loan-payment-per-month
-                               principal-remaining
-                               interest-rate
-                               duration-years))
-        principal-paid-per-month (- payment-per-month interest-paid-per-month)
-        principal-paid (* 12 principal-paid-per-month)
-        interest-paid (* 12 interest-paid-per-month)
-        cost-property-tax (Math/round (* property-tax-rate purchase-price))
-        cost-maintenance (Math/round (* 0.01 purchase-price))
-        cost-insurance (Math/round (* 0.002 purchase-price))
-        tax-deductible (+ interest-paid
-                          (* property-tax-rate purchase-price))
-        tax-savings (Math/round (* income-tax-rate tax-deductible))
-        net-other-costs (+ cost-property-tax
-                           cost-insurance
-                           cost-maintenance
-                           (- tax-savings))
-        net-other-costs-ppm (Math/round (/ net-other-costs 12.0))
-        cumulative-net-other-costs (+ cumulative-net-other-costs net-other-costs)
-        cumulative-interest-paid (+ cumulative-interest-paid interest-paid)]
-    (when (pos? principal-remaining)
-      (lazy-seq (cons {:t n
-                       :principal principal-remaining
-                       :ppm payment-per-month
-                       :interest-ppm interest-paid-per-month
-                       :principal-ppm principal-paid-per-month
-                       :net-other-costs-ppm net-other-costs-ppm
-                       :cumulative-net-other-costs cumulative-net-other-costs
-                       :cumulative-interest-paid cumulative-interest-paid}
-                      (compute-mortgage-balance :n (inc n)
-                                                :cumulative-interest-paid cumulative-interest-paid
-                                                :cumulative-net-other-costs cumulative-net-other-costs
-                                                :purchase-price purchase-price
-                                                :downpayment downpayment
-                                                :principal-remaining (-> principal-remaining
-                                                                         (- (* principal-paid-per-month 12))
-                                                                         (float)
-                                                                         (Math/round))
-                                                :interest-rate interest-rate
-                                                :duration-years duration-years
-                                                :payment-per-month payment-per-month))))))
+  options:
+      :downpayment downpayment made (defaults to 20% of purchase-price)
+      :duration-years duration of mortgage in years (defaults to 30 years)
+      :interest-rate annual rate of interest (defaults to 0.04)
+      :payment-per-month payments to make every month
+                         (defaults to minimum amount to pay off mortgage in 30 years)"
+  ([purchase-price] (compute-mortgage-balance purchase-price {}))
+  ([purchase-price options] (compute-mortgage-balance
+                             purchase-price
+                             {:n 0
+                              :cumulative-interest-paid 0
+                              :principal-remaining nil}
+                             options))
+  ([purchase-price
+    {:keys [n cumulative-interest-paid principal-remaining]}
+    {:keys [downpayment
+            duration-years
+            interest-rate
+            payment-per-month]
+     :or {downpayment (* 0.20 purchase-price)
+          duration-years 30
+          interest-rate 0.04}
+     :as options}]
+   (let [principal-remaining (or principal-remaining
+                                 (- purchase-price downpayment))
+         interest-paid-per-month (-> principal-remaining
+                                     (* interest-rate)
+                                     (/ 12))
+         payment-per-month (or payment-per-month
+                               (compute-amortized-loan-payment-per-month
+                                (- purchase-price downpayment)
+                                interest-rate
+                                duration-years))
+         principal-paid-per-month (- payment-per-month interest-paid-per-month)
+         principal-paid (* 12 principal-paid-per-month)
+         interest-paid (* 12 interest-paid-per-month)
+         cumulative-interest-paid (+ cumulative-interest-paid interest-paid)]
+     (when (and (pos? principal-remaining)
+                (< n duration-years))
+       (lazy-seq (cons {:t n
+                        :principal principal-remaining
+                        :ppm payment-per-month
+                        :interest-ppm interest-paid-per-month
+                        :principal-ppm principal-paid-per-month
+                        :cumulative-interest-paid cumulative-interest-paid}
+                       (compute-mortgage-balance purchase-price
+                                                 {:n (inc n)
+                                                  :cumulative-interest-paid cumulative-interest-paid
+                                                  :principal-remaining (- principal-remaining principal-paid)}
+                                                 (assoc options :payment-per-month payment-per-month))))))))
+
+(defn buy-vs-rent
+  "Computes buy-vs-rent analysis over time.
+
+  options:
+      :downpayment downpayment made for home (defaults to 20% of home-price)
+      :closing-cost closing cost when buying home (defaults to 4% of home-price)
+      :mortgage-duration-years duration of mortgage in years (defaults to 30 years)
+      :mortgage-monthly-payment payment made per month on mortgage
+                                (defaults to minimum amount to pay off mortgage in mortgage-duration-years)
+      :mortgage-interest-rate annual interest rate on mortgage (defaults to 0.04)
+      :monthly-rent expected rent if renting instead of buying a home
+                    (defaults to 2500)
+      :monthly-cost-hoa HOA cost for home if any (defaults to 0)
+      :home-appreciation-rate rate in percentage at which home value appreciates annually
+                              (defaults to 0)
+      :rent-appreciation-rate rate in percentage at which rent increases annually
+                              (defaults to 0)
+      :property-tax-rate annual property tax in percentage of home purchase value
+                         (defaults to 0.01)
+      :maintenance-cost-rate maintenance cost in percentage of home purchase value
+                             (defaults to 0.01)
+      :insurance-cost-rate insurance cost in percentage of home purchase value
+                           (defaults to 0.002)
+      :home-sale-cost-rate cost in percentage of home value when home is sold
+                           (defaults to 0.06)
+      :alternate-investments-return-rate rate of return of alternate investments
+                           (defaults to 0.05)
+      :income-tax-rate income tax rate to compute tax savings
+                       (defaults to 0.33)
+      :max-t max number of time units to return data for"
+  ([home-price] (buy-vs-rent home-price {}))
+  ([home-price options]
+   (buy-vs-rent home-price
+                {:n 0
+                 :mortgage-computations nil
+                 :cumulative-opportunity-cost-of-home 0}
+                options))
+  ([home-price
+    {:keys [n
+            mortgage-computations
+            cumulative-opportunity-cost-of-home]}
+    {:keys [downpayment
+            closing-cost
+            mortgage-monthly-payment
+            mortgage-duration-years
+            mortgage-interest-rate
+            monthly-rent
+            monthly-cost-hoa
+            home-appreciation-rate
+            rent-appreciation-rate
+            property-tax-rate
+            maintenance-cost-rate
+            insurance-cost-rate
+            home-sale-cost-rate
+            income-tax-rate
+            alternate-investments-return-rate
+            max-t]
+     :or {downpayment (* 0.20 home-price)
+          closing-cost (* 0.04 home-price)
+          mortgage-monthly-payment nil
+          mortgage-duration-years 30
+          mortgage-interest-rate 0.04
+          monthly-rent 2500
+          monthly-cost-hoa 0
+          home-appreciation-rate 0
+          rent-appreciation-rate 0
+          property-tax-rate 0.01
+          maintenance-cost-rate 0.01
+          insurance-cost-rate 0.002
+          home-sale-cost-rate 0.06
+          income-tax-rate 0.33
+          alternate-investments-return-rate 0.05
+          max-t nil}
+     :as options}]
+   (let [mortgage-computations (or mortgage-computations
+                                   (compute-mortgage-balance
+                                    home-price
+                                    {:downpayment downpayment
+                                     :payment-per-month mortgage-monthly-payment
+                                     :interest-rate mortgage-interest-rate
+                                     :duration-years mortgage-duration-years}))
+         monthly-cost-property-tax (-> home-price
+                                       (* property-tax-rate)
+                                       (/ 12))
+         monthly-cost-maintenance (-> home-price
+                                      (* maintenance-cost-rate)
+                                      (/ 12))
+         monthly-cost-insurance (-> home-price
+                                    (* insurance-cost-rate)
+                                    (/ 12))
+         nth-mortgage-computation (nth mortgage-computations n
+                                       {:principal 0 :ppm 0 :interest-ppm 0 :principal-ppm 0})
+         tax-savings-per-month (* (+ (:interest-ppm nth-mortgage-computation)
+                                     monthly-cost-property-tax)
+                                  income-tax-rate)
+         principal-remaining (:principal nth-mortgage-computation)
+         mortgage-monthly-payment (if (pos? principal-remaining)
+                                    (:ppm nth-mortgage-computation) 0)
+         monthly-rent (if (zero? n) monthly-rent (* monthly-rent (inc rent-appreciation-rate)))
+         interest-ppm (:interest-ppm nth-mortgage-computation)
+         principal-ppm (:principal-ppm nth-mortgage-computation)
+         home-value (* home-price (Math/pow (inc home-appreciation-rate) n))
+         equity-gain (- home-value principal-remaining)
+         opportunity-cost-of-downpayment-and-closing-cost
+         (* (+ downpayment closing-cost)
+            (Math/pow (inc alternate-investments-return-rate) n))
+         opportunity-cost-of-home-in-year-n (* (- (+ mortgage-monthly-payment
+                                                     monthly-cost-property-tax
+                                                     monthly-cost-maintenance
+                                                     monthly-cost-insurance
+                                                     monthly-cost-hoa)
+                                                  monthly-rent
+                                                  tax-savings-per-month)
+                                               12)
+         cumulative-opportunity-cost-of-home (+ (* cumulative-opportunity-cost-of-home
+                                                   (inc alternate-investments-return-rate))
+                                                opportunity-cost-of-home-in-year-n)
+         opportunity-cost (+ opportunity-cost-of-downpayment-and-closing-cost
+                             cumulative-opportunity-cost-of-home)
+         continue? (cond
+                     (nil? max-t) (pos? principal-remaining)
+                     :else (< n max-t))]
+     (when continue?
+       (lazy-seq (cons (apply array-map [:t n
+                                         :rent-ppm monthly-rent
+                                         :tax-savings (* tax-savings-per-month 12)
+                                         :mortgage-ppm mortgage-monthly-payment
+                                         :interest-ppm interest-ppm
+                                         :principal-ppm principal-ppm
+                                         :principal principal-remaining
+                                         :equity-gain equity-gain
+                                         :home-value home-value
+                                         :opportunity-cost opportunity-cost
+                                         :net-profit-after-home-sale (- (* (- 1 home-sale-cost-rate) home-value)
+                                                                        principal-remaining
+                                                                        opportunity-cost)])
+                       (buy-vs-rent
+                        home-price
+                        {:n (inc n)
+                         :mortgage-computations mortgage-computations
+                         :cumulative-opportunity-cost-of-home cumulative-opportunity-cost-of-home}
+                        (assoc options :monthly-rent monthly-rent))))))))
 
 (defn compute-investment-growth
-  "Lazily computes investment growth over time."
-  [& {:keys [n
-             starting-balance
-             compounding-rate
-             investment-per-year
-             expense-per-year
-             investment-sales-tax]
-      :or {n 0
-           starting-balance 100000
-           compounding-rate 0.05
-           investment-per-year 0
-           expense-per-year 0
-           investment-sales-tax 0}}]
-  (let [investment-lost-per-year (-> expense-per-year
-                                     (/ (- 1 investment-sales-tax))
-                                     float
-                                     Math/round)
-        balance (-> starting-balance
-                    (* (Math/pow (inc compounding-rate) 1))
-                    (- investment-lost-per-year)
-                    (+ investment-per-year)
-                    Math/round)]
-    (lazy-seq (cons
-               (let [all {:t n
-                          :starting-balance starting-balance
-                          :investment-per-year (Math/round investment-per-year)
-                          :expense (Math/round expense-per-year)
-                          :investment-lost-per-year investment-lost-per-year
-                          :ending-balance balance}
-                     keys-to-exclude (if (> 1 expense-per-year)
-                                       [:expense :investment-lost-per-year] [])
-                     keys-to-exclude (if (> 1 investment-per-year)
-                                       (concat keys-to-exclude [:investment-per-year])
-                                       keys-to-exclude)]
-                 (apply (partial dissoc all) keys-to-exclude))
-               (compute-investment-growth :n (inc n)
-                                          :starting-balance balance
-                                          :compounding-rate compounding-rate
-                                          :investment-per-year investment-per-year
-                                          :expense-per-year expense-per-year
-                                          :investment-sales-tax investment-sales-tax)))))
+  "Computes investment growth over time.
+
+  options:
+      :compounding-rate annual compounding rate (defaults to 0.05)
+      :investment-per-year annual additional investments made (defaults to 0)
+      :expense-per-year annual expenses covered by this investments (defaults to 0)
+      :investment-sales-tax-rate tax rate for sold investments (defaults to 0)"
+  ([starting-balance] (compute-investment-growth starting-balance {}))
+  ([starting-balance options] (compute-investment-growth starting-balance
+                                                         {:n 0}
+                                                         options))
+  ([starting-balance
+    {:keys [n]}
+    {:keys [compounding-rate
+            investment-per-year
+            expense-per-year
+            investment-sales-tax-rate]
+     :or {compounding-rate 0.05
+          investment-per-year 0
+          expense-per-year 0
+          investment-sales-tax-rate 0}
+     :as options}]
+   (let [investment-lost-per-year (-> expense-per-year
+                                      (/ (- 1 investment-sales-tax-rate)))
+         balance (-> starting-balance
+                     (* (inc compounding-rate))
+                     (- investment-lost-per-year)
+                     (+ investment-per-year))]
+     (lazy-seq (cons
+                (let [all {:t n
+                           :starting-balance starting-balance
+                           :investment-per-year investment-per-year
+                           :expense expense-per-year
+                           :investment-lost-per-year investment-lost-per-year
+                           :ending-balance balance}
+                      keys-to-exclude (if (> 1 expense-per-year)
+                                        [:expense :investment-lost-per-year] [])
+                      keys-to-exclude (if (> 1 investment-per-year)
+                                        (concat keys-to-exclude [:investment-per-year])
+                                        keys-to-exclude)]
+                  (apply (partial dissoc all) keys-to-exclude))
+                (compute-investment-growth balance
+                                           {:n (inc n)}
+                                           options))))))
 
 (defn analyze
   "Analyzes rate of investment of a particular account."

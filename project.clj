@@ -14,8 +14,9 @@
                  [cheshire "5.8.0"]
                  [table "0.5.0"]
                  [doric "0.9.0"]
-                 [com.hypirion/clj-xchart "0.2.0"]
-                 [clj-time "0.14.2"]]
+                 [plotly-clj "0.1.1"]
+                 [clj-time "0.14.2"]
+                 [org.clojars.benfb/gorilla-repl "0.4.3-SNAPSHOT"]]
   :main ^:skip-aot acc.core
   :target-path "target/%s"
   :bin {:name "acc"

@@ -6,13 +6,13 @@
             [clojure.java.io :as jio]
             [com.rpl.specter :as sp]
             [table.core :refer [table table-str]]
-            [com.hypirion.clj-xchart :as c]
             [acc.config :as config]
             [acc.dao.core :as dao]
             [acc.repl :as repl]
             [acc.time :as t]
-            [acc.io :as io]
-            [acc.analysis :as analysis]))
+            [acc.io :as io :refer [table-int table-currency]]
+            [acc.analysis :as analysis]
+            [acc.visualization :as v]))
 
 (def cli-options
   [["-h" "--help"]
@@ -216,15 +216,16 @@
                               (io/prompt-for-float "Expense per year covered from this investment: "))
          investment-sales-tax  (if (zero? expense-per-year) 0
                                    (io/prompt-for-float "Investment sales tax: "))]
-     (io/print-formatted
-      (take (if (string? n)
-              (Integer/parseInt n) n)
-            (analysis/compute-investment-growth
-             :starting-balance starting-balance
-             :compounding-rate compounding-rate
-             :investment-per-year investment-per-year
-             :expense-per-year expense-per-year
-             :investment-sales-tax investment-sales-tax)) oformat))))
+     (-> (take (if (string? n)
+                 (Integer/parseInt n) n)
+               (analysis/compute-investment-growth
+                starting-balance
+                {:compounding-rate compounding-rate
+                 :investment-per-year investment-per-year
+                 :expense-per-year expense-per-year
+                 :investment-sales-tax investment-sales-tax}))
+         io/format-as-currency
+         (io/print-formatted oformat)))))
 
 (defn execute-compute-command
   "Runs a specific computation."

@@ -168,3 +168,33 @@
   [data format-string]
   (s/transform [(s/walker float?)]
                #(format format-string %) data))
+
+(defn format-all-ints
+  "Formats all ints in data."
+  [data format-string]
+  (s/transform [(s/walker #(and (int? %)
+                                (>= % 1000)))]
+               #(format format-string %) data))
+
+(defn format-as-currency
+  "Formats all numbers as currency."
+  [data]
+  (-> data
+      (format-all-floats "%,12.2f")
+      (format-all-ints "%,12d")))
+
+(defn table-int
+  "Formats all floats in data as integers and prints as a table."
+  [data]
+  (table (format-all-floats data "%.0f")))
+
+(defn table-currency
+  "Formats all numbers as currency + adds commas + prints as a table."
+  [data]
+  (table (format-as-currency data)))
+
+(defn round-all-floats
+  "Rounds all floats in data."
+  [data]
+  (s/transform [(s/walker float?)]
+               #(Math/round %) data))
