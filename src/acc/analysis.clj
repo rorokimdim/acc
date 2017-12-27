@@ -28,6 +28,58 @@
        :median median-value
        :std-dev std-dev})))
 
+(defn compute-mortgage-balance
+  "Lazily computes mortgage balance over time."
+  [& {:keys [n
+             purchase-price
+             downpayment
+             interest-rate
+             duration-years
+             principal-remaining
+             payment-per-month
+             cumulative-interest-paid
+             cumulative-principal-paid]
+      :or {n 0
+           purchase-price 100000
+           principal-remaining (Math/round (- purchase-price downpayment))
+           downpayment (* 0.20 purchase-price)
+           cumulative-principal-paid 0
+           cumulative-interest-paid 0
+           interest-rate 0.04
+           duration-years 30
+           payment-per-month (let [r (/ interest-rate 12)
+                                   N (* 12 duration-years)
+                                   rr (Math/pow (inc r) N)
+                                   numerator (* r principal-remaining rr)
+                                   denominator (dec rr)]
+                               (Math/round (/ numerator denominator)))}}]
+  (let [interest-due-per-month (-> principal-remaining
+                                   (* interest-rate)
+                                   (/ 12)
+                                   (Math/round))
+        principal-paid-per-month (- payment-per-month interest-due-per-month)
+        principal-paid (* 12 principal-paid-per-month)
+        interest-paid (* 12 interest-due-per-month)]
+    (lazy-seq (cons {:t n
+                     :principal-remaining principal-remaining
+                     :payment-per-month payment-per-month
+                     :interest-paid interest-paid
+                     :principal-paid principal-paid
+                     :cumulative-principal-paid (+ cumulative-principal-paid principal-paid)
+                     :cumulative-interest-paid (+ cumulative-interest-paid interest-paid)}
+                    (compute-mortgage-balance :n (inc n)
+                                              :principal-remaining (-> principal-remaining
+                                                                       (- (* principal-paid-per-month 12))
+                                                                       (float)
+                                                                       (Math/round))
+                                              :purchase-price purchase-price
+                                              :downpayment downpayment
+                                              :cumulative-principal-paid (+ cumulative-principal-paid principal-paid)
+                                              :cumulative-interest-paid (+ cumulative-interest-paid interest-paid)
+                                              :interest-rate interest-rate
+                                              :duration-years (dec duration-years)
+                                              :payment-per-month payment-per-month)))))
+
 (defn compute-investment-growth
   "Lazily computes investment growth over time."
   [& {:keys [n
