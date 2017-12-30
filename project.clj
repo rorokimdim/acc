@@ -3,6 +3,7 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :plugins [[org.clojars.benfb/lein-gorilla "0.4.2-SNAPSHOT"]]
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/tools.nrepl "0.2.12"]
                  [org.clojure/tools.cli "0.3.5"]
@@ -16,7 +17,6 @@
                  [doric "0.9.0"]
                  [plotly-clj "0.1.1"]
                  [clj-time "0.14.2"]
-                 [org.clojars.benfb/lein-gorilla "0.4.2-SNAPSHOT"]
                  [org.clojars.benfb/gorilla-repl "0.4.3-SNAPSHOT"]]
   :main ^:skip-aot acc.core
   :target-path "target/%s"

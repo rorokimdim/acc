@@ -229,9 +229,9 @@
                                          :equity-gain equity-gain
                                          :home-value home-value
                                          :opportunity-cost opportunity-cost
-                                         :net-profit-after-home-sale (- (* (- 1 home-sale-cost-rate) home-value)
-                                                                        principal-remaining
-                                                                        opportunity-cost)])
+                                         :profit-from-sale (- (* (- 1 home-sale-cost-rate) home-value)
+                                                              principal-remaining
+                                                              opportunity-cost)])
                        (buy-vs-rent
                         home-price
                         {:n (inc n)
