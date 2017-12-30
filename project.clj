@@ -16,6 +16,7 @@
                  [doric "0.9.0"]
                  [plotly-clj "0.1.1"]
                  [clj-time "0.14.2"]
+                 [org.clojars.benfb/lein-gorilla "0.4.2-SNAPSHOT"]
                  [org.clojars.benfb/gorilla-repl "0.4.3-SNAPSHOT"]]
   :main ^:skip-aot acc.core
   :target-path "target/%s"
