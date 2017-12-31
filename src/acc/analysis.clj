@@ -3,7 +3,7 @@
             [acc.time :as t]))
 
 (defn get-stats [numbers]
-  "Gets stats on give list of numbers."
+  "Gets stats on given list of numbers."
   (if (empty? numbers)
     {}
     (let [sorted-numbers (sort numbers)

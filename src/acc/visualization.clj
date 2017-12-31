@@ -27,16 +27,19 @@
 
 (defn gorilla-view-table
   "Shows table data (list of hash-maps) in gorilla notebook."
-  [data & column-keys]
-  (let [column-keys (or column-keys
-                        (keys (first data)))
-        column-names (map (comp html-view name) column-keys)
-        values (map (apply juxt (map #(comp html-view %) column-keys)) data)]
-    (table-view values :columns column-names)))
+  ([data] (gorilla-view-table data nil nil))
+  ([data column-keys] (gorilla-view-table data column-keys nil))
+  ([data column-keys column-names]
+   (let [column-keys (or column-keys
+                         (keys (first data)))
+         column-names (or column-names
+                          (map (comp html-view name) column-keys))
+         values (map (apply juxt (map #(comp html-view %) column-keys)) data)]
+     (table-view values :columns column-names))))
 
-(defn gorilla-view-charts
+(defn gorilla-view-scatter-plots
   "Shows charts in gorilla notebook for given tabular data (list of hash-maps)."
-  ([data column-keys] (gorilla-view-charts data column-keys {}))
+  ([data column-keys] (gorilla-view-scatter-plots data column-keys {}))
   ([data column-keys {:keys [title
                              x-column-key
                              x-axis-label

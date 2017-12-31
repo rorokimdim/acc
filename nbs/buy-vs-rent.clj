@@ -41,37 +41,37 @@
 
 ;; @@
 ;; Plot by month
-(v/gorilla-view-charts BUY-VS-RENT-DATA
-                       [:principal :equity-gain :opportunity-cost :profit-from-sale]
-                       {:x-column-key :t
-                        :x-axis-label "months"
-                        :y-axis-label "Amount $"
-                        :title "Time Series Chart"
-                        :legend {:orientation "h" :x 0.1 :y -0.3}
-                        :y-axis-keys [nil nil nil "y2"]
-                        :extra-axis-definitions [:yaxis2 {:title "profit-from-sale"
-                                                          :side "right"
-                                                          :overlaying "y"
-                                                          :hoverformat ",.0f"
-                                                          :tickfont {:color "rgb(212,42,47)"}}
-                                                 ]})
+(v/gorilla-view-scatter-plots BUY-VS-RENT-DATA
+                              [:principal :equity-gain :opportunity-cost :profit-from-sale]
+                              {:x-column-key :t
+                               :x-axis-label "months"
+                               :y-axis-label "Amount $"
+                               :title "Time Series Chart"
+                               :legend {:orientation "h" :x 0.1 :y -0.3}
+                               :y-axis-keys [nil nil nil "y2"]
+                               :extra-axis-definitions [:yaxis2 {:title "profit-from-sale"
+                                                                 :side "right"
+                                                                 :overlaying "y"
+                                                                 :hoverformat ",.0f"
+                                                                 :tickfont {:color "rgb(212,42,47)"}}
+                                                        ]})
 
 ;; Plot by year
 (def BUY-VS-RENT-DATA-YEARLY (map last (partition-all 12 BUY-VS-RENT-DATA)))
-(v/gorilla-view-charts BUY-VS-RENT-DATA-YEARLY
-                       [:principal :equity-gain :opportunity-cost :profit-from-sale]
-                       {:x-column-key :y
-                        :x-axis-label "years"
-                        :y-axis-label "Amount $"
-                        :title "Time Series Chart"
-                        :legend {:orientation "h" :x 0.1 :y -0.3}
-                        :y-axis-keys [nil nil nil "y2"]
-                        :extra-axis-definitions [:yaxis2 {:title "profit-from-sale"
-                                                          :side "right"
-                                                          :overlaying "y"
-                                                          :hoverformat ",.0f"
-                                                          :tickfont {:color "rgb(212,42,47)"}}
-                                                 ]})
+(v/gorilla-view-scatter-plots BUY-VS-RENT-DATA-YEARLY
+                              [:principal :equity-gain :opportunity-cost :profit-from-sale]
+                              {:x-column-key :y
+                               :x-axis-label "years"
+                               :y-axis-label "Amount $"
+                               :title "Time Series Chart"
+                               :legend {:orientation "h" :x 0.1 :y -0.3}
+                               :y-axis-keys [nil nil nil "y2"]
+                               :extra-axis-definitions [:yaxis2 {:title "profit-from-sale"
+                                                                 :side "right"
+                                                                 :overlaying "y"
+                                                                 :hoverformat ",.0f"
+                                                                 :tickfont {:color "rgb(212,42,47)"}}
+                                                        ]})
 ;; @@
 
 ;; @@
@@ -82,5 +82,5 @@
                           :rent-ppm :r-ppm
                           :principal :p})
        (io/format-as-currency BUY-VS-RENT-DATA))
-  :t :y :i-ppm :r-ppm :m-ppm :p-ppm :p :equity-gain :opportunity-cost :profit-from-sale)
+  [:t :y :i-ppm :r-ppm :m-ppm :p-ppm :p :equity-gain :opportunity-cost :profit-from-sale])
 ;; @@

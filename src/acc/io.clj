@@ -1,5 +1,5 @@
 (ns acc.io
-  (:require [table.core :refer [table]]
+  (:require [table.core :refer [table table-str]]
             [com.rpl.specter :as s]
             [doric.core :as doric]
             [cheshire.core :as c]
@@ -57,6 +57,28 @@
                     (rest parsed))]
     (map keywordize-map output)))
 
+(defn formatted-str
+  "Returns formatted form of any data.
+  The following formats are supported:
+
+  * table tabular format (default)
+  * org table in org format
+  * unicode table with unicode characters
+  * unicode-3d table that looks 3Dish
+  * csv Comma delimited csv string
+  * html HTML table
+  * json Prettiefied JSON string"
+  ([data] (formatted-str data "table"))
+  ([data oformat]
+   (case oformat
+     "csv" (doric/table {:format doric/csv} data)
+     "html" (doric/table {:format doric/html} data)
+     "json" (c/generate-string data {:pretty JSON-PRETTY-PRINTER})
+     "org" (table-str data :style :org)
+     "table" (table-str data)
+     "unicode" (table-str data :style :unicode)
+     "unicode-3d" (table-str data :style :unicode-3d)
+     (table-str data))))
 
 (defn print-formatted
   "Prints formatted form of any data.
@@ -71,15 +93,7 @@
   * json Prettiefied JSON string"
   ([data] (print-formatted data "table"))
   ([data oformat]
-   (case oformat
-     "csv" (println (doric/table {:format doric/csv} data))
-     "html" (println (doric/table {:format doric/html} data))
-     "json" (println (c/generate-string data {:pretty JSON-PRETTY-PRINTER}))
-     "org" (table data :style :org)
-     "table" (table data)
-     "unicode" (table data :style :unicode)
-     "unicode-3d" (table data :style :unicode-3d)
-     (table data))))
+   (println (formatted-str data oformat))))
 
 (defn prompt-for-string
   "Prompts for a string."
@@ -183,15 +197,25 @@
       (format-all-floats "%,12.2f")
       (format-all-ints "%,12d")))
 
+(defn table-int-str
+  "Formats all floats in data as integers and returns table as string."
+  [data]
+  (table-str (format-all-floats data "%.0f")))
+
+(defn table-currency-str
+  "Formats all numbers as currency + adds commas + returns table as a string."
+  [data]
+  (table-str (format-as-currency data)))
+
 (defn table-int
   "Formats all floats in data as integers and prints as a table."
   [data]
-  (table (format-all-floats data "%.0f")))
+  (println (table-int-str data)))
 
 (defn table-currency
   "Formats all numbers as currency + adds commas + prints as a table."
   [data]
-  (table (format-as-currency data)))
+  (println (table-currency-str data)))
 
 (defn round-all-floats
   "Rounds all floats in data."
