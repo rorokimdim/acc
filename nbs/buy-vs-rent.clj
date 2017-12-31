@@ -2,10 +2,11 @@
 
 ;; @@
 (ns wandering-mountain
-  (:require [gorilla-plot.core :as gp]
+  (:require [clojure.set :as s]
+            [gorilla-plot.core :as gp]
             [gorilla-repl.table :refer [table-view]]
             [gorilla-repl.html :refer [html-view]]
-            
+
             [plotly-clj.core :as p]
             [acc.io :as io]
             [acc.analysis :as analysis]
@@ -39,6 +40,7 @@
 ;; @@
 
 ;; @@
+;; Plot by month
 (v/gorilla-view-charts BUY-VS-RENT-DATA
                        [:principal :equity-gain :opportunity-cost :profit-from-sale]
                        {:x-column-key :t
@@ -51,11 +53,33 @@
                                                           :side "right"
                                                           :overlaying "y"
                                                           :hoverformat ",.0f"
-                                                          :tickfont {:color "rgb(212,42,47)"}}]})
+                                                          :tickfont {:color "rgb(212,42,47)"}}
+                                                 ]})
+
+;; Plot by year
+(v/gorilla-view-charts BUY-VS-RENT-DATA
+                       [:principal :equity-gain :opportunity-cost :profit-from-sale]
+                       {:x-column-key :y
+                        :x-axis-label "y (years)"
+                        :y-axis-label "Amount $"
+                        :title "Time Series Chart"
+                        :legend {:orientation "h" :x 0.1 :y -0.3}
+                        :y-axis-keys [nil nil nil "y2"]
+                        :extra-axis-definitions [:yaxis2 {:title "profit-from-sale"
+                                                          :side "right"
+                                                          :overlaying "y"
+                                                          :hoverformat ",.0f"
+                                                          :tickfont {:color "rgb(212,42,47)"}}
+                                                 ]})
 ;; @@
 
 ;; @@
 (v/gorilla-view-table
-  (io/format-as-currency BUY-VS-RENT-DATA)
-  :t :interest-ppm :rent-ppm :mortgage-ppm :principal-ppm :principal :equity-gain :opportunity-cost :profit-from-sale)
+  (map #(s/rename-keys % {:interest-ppm :i-ppm
+                          :mortgage-ppm :m-ppm
+                          :principal-ppm :p-ppm
+                          :rent-ppm :r-ppm
+                          :principal :p})
+       (io/format-as-currency BUY-VS-RENT-DATA))
+  :t :y :i-ppm :r-ppm :m-ppm :p-ppm :p :equity-gain :opportunity-cost :profit-from-sale)
 ;; @@

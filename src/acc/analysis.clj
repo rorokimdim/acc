@@ -218,6 +218,10 @@
                      :else (< n max-t))]
      (when continue?
        (lazy-seq (cons (apply array-map [:t n
+                                         :y (-> n
+                                                (/ 12.0)
+                                                Math/floor
+                                                Math/round)
                                          :rent-ppm rent-ppm
                                          :savings-tax savings-tax
                                          :mortgage-ppm mortgage-ppm
