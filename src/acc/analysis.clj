@@ -49,8 +49,8 @@
       :downpayment downpayment made (defaults to 20% of purchase-price)
       :duration-years duration of mortgage in years (defaults to 30 years)
       :interest-rate annual rate of interest (defaults to 0.04)
-      :payment-per-month payments to make every month
-                         (defaults to minimum amount to pay off mortgage in 30 years)"
+      :ppm payments to make every month
+           (defaults to minimum amount to pay off mortgage in 30 years)"
   ([purchase-price] (compute-mortgage-balance purchase-price {}))
   ([purchase-price options] (compute-mortgage-balance
                              purchase-price
@@ -63,38 +63,37 @@
     {:keys [downpayment
             duration-years
             interest-rate
-            payment-per-month]
+            ppm]
      :or {downpayment (* 0.20 purchase-price)
           duration-years 30
           interest-rate 0.04}
      :as options}]
    (let [principal-remaining (or principal-remaining
                                  (- purchase-price downpayment))
-         interest-paid-per-month (-> principal-remaining
-                                     (* interest-rate)
-                                     (/ 12))
-         payment-per-month (or payment-per-month
-                               (compute-amortized-loan-payment-per-month
-                                (- purchase-price downpayment)
-                                interest-rate
-                                duration-years))
-         principal-paid-per-month (- payment-per-month interest-paid-per-month)
-         principal-paid (* 12 principal-paid-per-month)
-         interest-paid (* 12 interest-paid-per-month)
-         cumulative-interest-paid (+ cumulative-interest-paid interest-paid)]
+         interest-ppm (-> principal-remaining
+                          (* interest-rate)
+                          (/ 12))
+         ppm (min (or ppm
+                      (compute-amortized-loan-payment-per-month
+                       (- purchase-price downpayment)
+                       interest-rate
+                       duration-years))
+                  principal-remaining)
+         principal-ppm (- ppm interest-ppm)
+         cumulative-interest-paid (+ cumulative-interest-paid interest-ppm)]
      (when (and (pos? principal-remaining)
-                (< n duration-years))
+                (< n (* 12 duration-years)))
        (lazy-seq (cons {:t n
                         :principal principal-remaining
-                        :ppm payment-per-month
-                        :interest-ppm interest-paid-per-month
-                        :principal-ppm principal-paid-per-month
+                        :ppm ppm
+                        :interest-ppm interest-ppm
+                        :principal-ppm principal-ppm
                         :cumulative-interest-paid cumulative-interest-paid}
                        (compute-mortgage-balance purchase-price
                                                  {:n (inc n)
                                                   :cumulative-interest-paid cumulative-interest-paid
-                                                  :principal-remaining (- principal-remaining principal-paid)}
-                                                 (assoc options :payment-per-month payment-per-month))))))))
+                                                  :principal-remaining (- principal-remaining principal-ppm)}
+                                                 (assoc options :ppm ppm))))))))
 
 (defn buy-vs-rent
   "Computes buy-vs-rent analysis over time.
@@ -139,11 +138,11 @@
             cumulative-opportunity-cost-of-home]}
     {:keys [downpayment
             closing-cost
-            mortgage-monthly-payment
+            mortgage-ppm
             mortgage-duration-years
             mortgage-interest-rate
-            monthly-rent
-            monthly-cost-hoa
+            rent-ppm
+            hoa-ppm
             home-appreciation-rate
             rent-appreciation-rate
             property-tax-rate
@@ -158,8 +157,8 @@
           mortgage-monthly-payment nil
           mortgage-duration-years 30
           mortgage-interest-rate 0.04
-          monthly-rent 2500
-          monthly-cost-hoa 0
+          rent-ppm 2500
+          hoa-ppm 0
           home-appreciation-rate 0
           rent-appreciation-rate 0
           property-tax-rate 0.01
@@ -174,45 +173,44 @@
                                    (compute-mortgage-balance
                                     home-price
                                     {:downpayment downpayment
-                                     :payment-per-month mortgage-monthly-payment
+                                     :ppm mortgage-ppm
                                      :interest-rate mortgage-interest-rate
                                      :duration-years mortgage-duration-years}))
-         monthly-cost-property-tax (-> home-price
-                                       (* property-tax-rate)
-                                       (/ 12))
-         monthly-cost-maintenance (-> home-price
-                                      (* maintenance-cost-rate)
-                                      (/ 12))
-         monthly-cost-insurance (-> home-price
-                                    (* insurance-cost-rate)
-                                    (/ 12))
+         cost-property-tax (-> home-price
+                               (* property-tax-rate)
+                               (/ 12))
+         cost-maintenance (-> home-price
+                              (* maintenance-cost-rate)
+                              (/ 12))
+         cost-insurance (-> home-price
+                            (* insurance-cost-rate)
+                            (/ 12))
          nth-mortgage-computation (nth mortgage-computations n
                                        {:principal 0 :ppm 0 :interest-ppm 0 :principal-ppm 0})
-         tax-savings-per-month (* (+ (:interest-ppm nth-mortgage-computation)
-                                     monthly-cost-property-tax)
-                                  income-tax-rate)
+         savings-tax (* (+ (:interest-ppm nth-mortgage-computation)
+                           cost-property-tax)
+                        income-tax-rate)
          principal-remaining (:principal nth-mortgage-computation)
-         mortgage-monthly-payment (if (pos? principal-remaining)
-                                    (:ppm nth-mortgage-computation) 0)
-         monthly-rent (if (zero? n) monthly-rent (* monthly-rent (inc rent-appreciation-rate)))
+         mortgage-ppm (if (pos? principal-remaining)
+                        (:ppm nth-mortgage-computation) 0)
+         rent-ppm (if (zero? n) rent-ppm (* rent-ppm (inc (/ rent-appreciation-rate 12))))
          interest-ppm (:interest-ppm nth-mortgage-computation)
          principal-ppm (:principal-ppm nth-mortgage-computation)
-         home-value (* home-price (Math/pow (inc home-appreciation-rate) n))
+         home-value (* home-price (Math/pow (inc (/ home-appreciation-rate 12)) n))
          equity-gain (- home-value principal-remaining)
          opportunity-cost-of-downpayment-and-closing-cost
          (* (+ downpayment closing-cost)
-            (Math/pow (inc alternate-investments-return-rate) n))
-         opportunity-cost-of-home-in-year-n (* (- (+ mortgage-monthly-payment
-                                                     monthly-cost-property-tax
-                                                     monthly-cost-maintenance
-                                                     monthly-cost-insurance
-                                                     monthly-cost-hoa)
-                                                  monthly-rent
-                                                  tax-savings-per-month)
-                                               12)
+            (Math/pow (inc (/ alternate-investments-return-rate 12)) n))
+         opportunity-cost-of-home-in-month-n (- (+ mortgage-ppm
+                                                   cost-property-tax
+                                                   cost-maintenance
+                                                   cost-insurance
+                                                   hoa-ppm)
+                                                rent-ppm
+                                                savings-tax)
          cumulative-opportunity-cost-of-home (+ (* cumulative-opportunity-cost-of-home
-                                                   (inc alternate-investments-return-rate))
-                                                opportunity-cost-of-home-in-year-n)
+                                                   (inc (/ alternate-investments-return-rate 12)))
+                                                opportunity-cost-of-home-in-month-n)
          opportunity-cost (+ opportunity-cost-of-downpayment-and-closing-cost
                              cumulative-opportunity-cost-of-home)
          continue? (cond
@@ -220,9 +218,9 @@
                      :else (< n max-t))]
      (when continue?
        (lazy-seq (cons (apply array-map [:t n
-                                         :rent-ppm monthly-rent
-                                         :tax-savings (* tax-savings-per-month 12)
-                                         :mortgage-ppm mortgage-monthly-payment
+                                         :rent-ppm rent-ppm
+                                         :savings-tax savings-tax
+                                         :mortgage-ppm mortgage-ppm
                                          :interest-ppm interest-ppm
                                          :principal-ppm principal-ppm
                                          :principal principal-remaining
@@ -237,7 +235,7 @@
                         {:n (inc n)
                          :mortgage-computations mortgage-computations
                          :cumulative-opportunity-cost-of-home cumulative-opportunity-cost-of-home}
-                        (assoc options :monthly-rent monthly-rent))))))))
+                        (assoc options :rent-ppm rent-ppm))))))))
 
 (defn compute-investment-growth
   "Computes investment growth over time.

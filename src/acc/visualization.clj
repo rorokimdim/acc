@@ -18,6 +18,7 @@
                  :y (map column-key data)
                  :name column-key
                  :mode "lines+markers"
+                 :marker {:size 1}
                  :type "scatter"
                  :hoverinfo "x+y"
                  :xaxis x-axis-key
