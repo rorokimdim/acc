@@ -44,7 +44,7 @@
 (v/gorilla-view-charts BUY-VS-RENT-DATA
                        [:principal :equity-gain :opportunity-cost :profit-from-sale]
                        {:x-column-key :t
-                        :x-axis-label "t (months)"
+                        :x-axis-label "months"
                         :y-axis-label "Amount $"
                         :title "Time Series Chart"
                         :legend {:orientation "h" :x 0.1 :y -0.3}
@@ -57,10 +57,11 @@
                                                  ]})
 
 ;; Plot by year
-(v/gorilla-view-charts BUY-VS-RENT-DATA
+(def BUY-VS-RENT-DATA-YEARLY (map last (partition-all 12 BUY-VS-RENT-DATA)))
+(v/gorilla-view-charts BUY-VS-RENT-DATA-YEARLY
                        [:principal :equity-gain :opportunity-cost :profit-from-sale]
                        {:x-column-key :y
-                        :x-axis-label "y (years)"
+                        :x-axis-label "years"
                         :y-axis-label "Amount $"
                         :title "Time Series Chart"
                         :legend {:orientation "h" :x 0.1 :y -0.3}
