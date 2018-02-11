@@ -248,7 +248,6 @@
   (let [all-account-names (map :name (dao/get-accounts))
         completions (concat (get-completions-for-ns 'clojure.core)
                             (get-completions-for-ns 'clojure.repl)
-                            (get-completions-for-ns 'com.hypirion.clj-xchart "c/")
                             (get-completions-for-ns 'acc.core)
                             (get-completions-for-ns 'acc.dao.core "dao/")
                             (get-completions-for-ns 'acc.io "io/")
