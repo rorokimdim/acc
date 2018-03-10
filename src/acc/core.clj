@@ -196,9 +196,13 @@
   (table
    (io/format-all-floats
     (dao/execute-sql
-     "SELECT SUM(amount),account_name FROM investment
-     GROUP BY account_name
-     ORDER BY account_name") "%.2f"))
+     "SELECT
+        SUM(amount),
+        SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as deposits,
+        SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) as withdrawals,
+        account_name FROM investment
+      GROUP BY account_name
+      ORDER BY account_name") "%.2f"))
   (System/exit 0))
 
 (defn handle-compute-growth
