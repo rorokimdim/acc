@@ -1,5 +1,6 @@
 (ns acc.core
   (:gen-class)
+  (:refer-clojure :exclude [parse-opts])
   (:require [clojure.tools.cli :refer [parse-opts]]
             [clojure.repl :refer :all]
             [clojure.spec.alpha :as s]
@@ -87,7 +88,7 @@
                              (assoc :account-name (io/sluggify account-name))
                              (assoc :amount (Float/parseFloat amount))
                              (assoc :date (t/format-date (t/parse-as-date date))))
-                         (catch IllegalArgumentException e
+                         (catch IllegalArgumentException _
                            (throw (IllegalArgumentException. (str "Invalid date " date))))
                          (catch NumberFormatException _
                            (throw (IllegalArgumentException. (str "Invalid amount " amount))))))
